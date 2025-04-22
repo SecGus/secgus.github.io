@@ -1,1 +1,815 @@
-Viva el juan
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-T3VQ6KZS');</script>
+<!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Camelot Wheel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        
+        .wheel-section {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            margin-bottom: 30px;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+        
+        .results-section {
+            width: 620px;
+            align-self: flex-start;
+            margin-right: 20px;
+        }
+        
+        .wheel-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+        }
+        
+        .wheel-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .segment {
+            cursor: pointer;
+            transition: opacity 0.2s;
+            stroke-width: 1;
+            stroke: #888;
+        }
+        
+        .segment:hover {
+            opacity: 0.8;
+            stroke-width: 2;
+            stroke: #000;
+        }
+        
+        .segment.selected {
+            stroke: #000;
+            stroke-width: 3;
+            opacity: 1;
+        }
+        
+        .segment-text {
+            pointer-events: none;
+            fill: #000;
+        }
+        
+        .position-text {
+            font-size: 15px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        
+        .name-text {
+            font-size: 10px;
+            font-weight: normal;
+            text-anchor: middle;
+        }
+        
+        .text-bg {
+            fill: white;
+            fill-opacity: 0.7;
+            stroke: none;
+        }
+        
+        .minor {
+            fill: #8dd3c7;
+        }
+        
+        .major {
+            fill: #fb8072;
+        }
+        
+        .results {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            gap: 20px;
+        }
+        
+        .result-box {
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 18px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+        
+        .result-box h3 {
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .result-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .result-list li {
+            padding: 8px;
+            margin: 6px 0;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .result-key {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        
+        .result-description {
+            font-size: 12px;
+            color: #333;
+            margin-top: 3px;
+        }
+        
+        /* Key relationship highlight colors for result items */
+        .result-perfect-match {
+            background-color: #aec6cf !important;
+            border-left: 4px solid #7a98a5;
+        }
+        
+        .result-energy-boost {
+            background-color: #77dd77 !important;
+            border-left: 4px solid #53aa53;
+        }
+        
+        .result-energy-drop {
+            background-color: #ffb347 !important;
+            border-left: 4px solid #d99333;
+        }
+        
+        .result-major-energy-boost {
+            background-color: #77dd77 !important;
+            border-left: 4px solid #53aa53;
+            border-right: 4px solid #53aa53;
+        }
+        
+        .result-major-energy-drop {
+            background-color: #ffb347 !important;
+            border-left: 4px solid #d99333;
+            border-right: 4px solid #d99333;
+        }
+        
+        .result-relative-switch {
+            background-color: #fdfd96 !important;
+            border-left: 4px solid #dad86e;
+        }
+        
+        .result-dominant-switch {
+            background-color: #ff6961 !important;
+            border-left: 4px solid #cc534d;
+        }
+        
+        .result-minor-third {
+            background-color: #b19cd9 !important;
+            border-left: 4px solid #8a70b5;
+        }
+        
+        .result-same-root {
+            background-color: #e79eff !important;
+            border-left: 4px solid #c16bd1;
+        }
+        
+        .result-dominant-relative {
+            background-color: #87cefa !important;
+            border-left: 4px solid #5d9fcf;
+        }
+        
+        .result-subdominant-relative {
+            background-color: #98d8c6 !important;
+            border-left: 4px solid #6bab9a;
+        }
+        
+        .legend-container {
+            width: 300px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-left: 20px;
+        }
+        
+        .legend-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .legend-item {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .legend-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        
+        .legend-text {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .energy-boost {
+            background-color: #77dd77;
+        }
+        
+        .energy-drop {
+            background-color: #ffb347;
+        }
+        
+        .perfect-match {
+            background-color: #aec6cf;
+        }
+        
+        .relative-switch {
+            background-color: #fdfd96;
+        }
+        
+        .dominant-switch {
+            background-color: #ff6961;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Camelot Wheel</h1>
+    <div class="container">
+        <div class="wheel-section">
+            <!-- Results on the left (tables side by side) -->
+            <div class="results-section">
+                <div class="results">
+                    <div class="result-box">
+                        <h3>Keys that can go TO this key</h3>
+                        <ul class="result-list" id="incoming-keys"></ul>
+                    </div>
+                    <div class="result-box">
+                        <h3>Keys this key can go TO</h3>
+                        <ul class="result-list" id="outgoing-keys"></ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Wheel in the middle -->
+            <div class="wheel-container" id="wheel"></div>
+            
+            <!-- Legend on the right -->
+            <div class="legend-container">
+                <div class="legend-title">Mixing Guide</div>
+                <div class="legend-item">
+                    <div class="legend-icon perfect-match">=</div>
+                    <div class="legend-text"><strong>Same Key:</strong> Perfect harmonic match, tracks "sing together" (e.g., 4A → 4A)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon energy-boost">+1</div>
+                    <div class="legend-text"><strong>Up a Fifth (+1):</strong> Energy boost with near-perfect compatibility (e.g., 4A → 5A)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon energy-drop">-1</div>
+                    <div class="legend-text"><strong>Down a Fifth (-1):</strong> Takes crowd deeper, creates goosebumps (e.g., 4A → 3A)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #77dd77;">+2</div>
+                    <div class="legend-text"><strong>Up a Whole Step (+2):</strong> Major energy boost, "hands in the air" mixing (e.g., 4A → 6A)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #b19cd9;">-3</div>
+                    <div class="legend-text"><strong>Up a Minor Third (-3):</strong> Raises energy despite 3 different notes (e.g., 4A → 1A)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon relative-switch">R</div>
+                    <div class="legend-text"><strong>Relative Switch:</strong> Dramatic energy change with same notes (e.g., 4A → 4B)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon dominant-switch">+7</div>
+                    <div class="legend-text"><strong>Half Step Modulation (+7):</strong> Dramatic energy boost with percussive mixing (e.g., 4A → 11A)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #e79eff;">+3R</div>
+                    <div class="legend-text"><strong>Same Root Note (+3 & letter):</strong> Brightens/darkens mood with same root (e.g., 4A → 7B)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #87cefa;">+1R</div>
+                    <div class="legend-text"><strong>Dominant Relative (+1 & letter):</strong> Great major/minor transition (e.g., 4A → 5B)</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #98d8c6;">-1R</div>
+                    <div class="legend-text"><strong>Subdominant Relative (-1 & letter):</strong> Smooth major/minor transition (e.g., 4B → 3A)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Camelot wheel data
+        const camelotWheel = [
+            { position: "1B", name: "Ab Minor", type: "minor" },
+            { position: "2B", name: "Eb Minor", type: "minor" },
+            { position: "3B", name: "Bb Minor", type: "minor" },
+            { position: "4B", name: "F Minor", type: "minor" },
+            { position: "5B", name: "C Minor", type: "minor" },
+            { position: "6B", name: "G Minor", type: "minor" },
+            { position: "7B", name: "D Minor", type: "minor" },
+            { position: "8B", name: "A Minor", type: "minor" },
+            { position: "9B", name: "E Minor", type: "minor" },
+            { position: "10B", name: "B Minor", type: "minor" },
+            { position: "11B", name: "F# Minor", type: "minor" },
+            { position: "12B", name: "C# Minor", type: "minor" },
+            { position: "1A", name: "B Major", type: "major" },
+            { position: "2A", name: "F# Major", type: "major" },
+            { position: "3A", name: "Db Major", type: "major" },
+            { position: "4A", name: "Ab Major", type: "major" },
+            { position: "5A", name: "Eb Major", type: "major" },
+            { position: "6A", name: "Bb Major", type: "major" },
+            { position: "7A", name: "F Major", type: "major" },
+            { position: "8A", name: "C Major", type: "major" },
+            { position: "9A", name: "G Major", type: "major" },
+            { position: "10A", name: "D Major", type: "major" },
+            { position: "11A", name: "A Major", type: "major" },
+            { position: "12A", name: "E Major", type: "major" }
+        ];
+
+        // Create the wheel
+        function createWheel() {
+            const wheelContainer = document.getElementById('wheel');
+            
+            // Create SVG element with a fixed viewBox to ensure stability
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("class", "wheel-svg");
+            svg.setAttribute("viewBox", "0 0 600 600");
+            svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+            
+            wheelContainer.appendChild(svg);
+            
+            const centerX = 300;
+            const centerY = 300;
+            const outerRadius = 240;
+            const innerRadius = 180;
+            const coreRadius = 90;
+            
+            // Draw outer circle for stability
+            const outerCircle = document.createElementNS(svgNS, "circle");
+            outerCircle.setAttribute("cx", centerX);
+            outerCircle.setAttribute("cy", centerY);
+            outerCircle.setAttribute("r", outerRadius);
+            outerCircle.setAttribute("fill", "none");
+            outerCircle.setAttribute("stroke", "#ddd");
+            outerCircle.setAttribute("stroke-width", "1");
+            svg.appendChild(outerCircle);
+            
+            // Draw inner circles
+            const middleCircle = document.createElementNS(svgNS, "circle");
+            middleCircle.setAttribute("cx", centerX);
+            middleCircle.setAttribute("cy", centerY);
+            middleCircle.setAttribute("r", innerRadius);
+            middleCircle.setAttribute("fill", "none");
+            middleCircle.setAttribute("stroke", "#ddd");
+            middleCircle.setAttribute("stroke-width", "1");
+            svg.appendChild(middleCircle);
+            
+            const innerCircle = document.createElementNS(svgNS, "circle");
+            innerCircle.setAttribute("cx", centerX);
+            innerCircle.setAttribute("cy", centerY);
+            innerCircle.setAttribute("r", coreRadius);
+            innerCircle.setAttribute("fill", "none");
+            innerCircle.setAttribute("stroke", "#ddd");
+            innerCircle.setAttribute("stroke-width", "1");
+            svg.appendChild(innerCircle);
+            
+            // Segment setup
+            const numKeys = 12;
+            const angleSlice = (Math.PI * 2) / numKeys;
+            
+            // Group keys by type first, then draw them
+            const minorKeys = camelotWheel.filter(key => key.type === "minor");
+            const majorKeys = camelotWheel.filter(key => key.type === "major");
+            
+            // Draw segments for minor keys (outer ring)
+            minorKeys.forEach(key => {
+                const num = parseInt(key.position);
+                
+                // Calculate angle (start at 12 o'clock and go clockwise)
+                const startAngle = (num - 1) * angleSlice - Math.PI / 2;
+                const endAngle = num * angleSlice - Math.PI / 2;
+                
+                createSegment(svg, centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, key);
+            });
+            
+            // Draw segments for major keys (inner ring)
+            majorKeys.forEach(key => {
+                const num = parseInt(key.position);
+                
+                // Calculate angle (start at 12 o'clock and go clockwise)
+                const startAngle = (num - 1) * angleSlice - Math.PI / 2;
+                const endAngle = num * angleSlice - Math.PI / 2;
+                
+                createSegment(svg, centerX, centerY, coreRadius, innerRadius, startAngle, endAngle, key);
+            });
+        }
+        
+        // Helper function to create a segment
+        function createSegment(svg, centerX, centerY, innerR, outerR, startAngle, endAngle, key) {
+            const svgNS = "http://www.w3.org/2000/svg";
+            
+            // Create a group for the segment and its text
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("class", `key-group-${key.position}`);
+            svg.appendChild(group);
+            
+            // Draw segment
+            const segment = document.createElementNS(svgNS, "path");
+            const largeArcFlag = 0; // 0 for arc < 180 degrees
+            
+            const d = [
+                `M ${centerX + innerR * Math.cos(startAngle)} ${centerY + innerR * Math.sin(startAngle)}`,
+                `L ${centerX + outerR * Math.cos(startAngle)} ${centerY + outerR * Math.sin(startAngle)}`,
+                `A ${outerR} ${outerR} 0 ${largeArcFlag} 1 ${centerX + outerR * Math.cos(endAngle)} ${centerY + outerR * Math.sin(endAngle)}`,
+                `L ${centerX + innerR * Math.cos(endAngle)} ${centerY + innerR * Math.sin(endAngle)}`,
+                `A ${innerR} ${innerR} 0 ${largeArcFlag} 0 ${centerX + innerR * Math.cos(startAngle)} ${centerY + innerR * Math.sin(startAngle)}`,
+                'Z'
+            ].join(' ');
+            
+            segment.setAttribute("d", d);
+            segment.setAttribute("class", `segment ${key.type}`);
+            segment.setAttribute("data-position", key.position);
+            
+            // Add event listener
+            segment.addEventListener('click', () => selectKey(key));
+            
+            group.appendChild(segment);
+            
+            // Add text in center of segment
+            const midAngle = (startAngle + endAngle) / 2;
+            const midRadius = (innerR + outerR) / 2;
+            const textX = centerX + midRadius * Math.cos(midAngle);
+            const textY = centerY + midRadius * Math.sin(midAngle);
+            
+            // Determine text rotation
+            let rotation = (midAngle * 180 / Math.PI) % 360;
+            if (rotation > 90 && rotation < 270) {
+                rotation = rotation - 180;
+            }
+            
+            // Create text element for position
+            const text = document.createElementNS(svgNS, "text");
+            text.setAttribute("x", textX);
+            text.setAttribute("y", textY - 6);
+            text.setAttribute("class", "segment-text position-text");
+            text.setAttribute("dominant-baseline", "middle");
+            text.setAttribute("transform", `rotate(${rotation} ${textX} ${textY - 6})`);
+            text.textContent = key.position;
+            group.appendChild(text);
+            
+            // Create text element for name (abbreviated)
+            const noteName = key.name.split(' ')[0];
+            const suffix = key.type === 'minor' ? 'm' : '';
+            const displayName = noteName + suffix;
+            
+            const nameText = document.createElementNS(svgNS, "text");
+            nameText.setAttribute("x", textX);
+            nameText.setAttribute("y", textY + 15);
+            nameText.setAttribute("class", "segment-text name-text");
+            nameText.setAttribute("dominant-baseline", "middle");
+            nameText.setAttribute("transform", `rotate(${rotation} ${textX} ${textY + 15})`);
+            nameText.textContent = displayName;
+            group.appendChild(nameText);
+        }
+        
+        // Get compatible keys
+        function getCompatibleKeys(selectedKey) {
+            return {
+                incoming: getIncomingKeys(selectedKey),
+                outgoing: getOutgoingKeys(selectedKey)
+            };
+        }
+        
+        // Calculate keys that can go TO the selected key (incoming)
+        function getIncomingKeys(selectedKey) {
+            const position = selectedKey.position;
+            const num = parseInt(position);
+            const type = position.slice(-1);
+            
+            const incomingItems = [
+                // Same key (perfect match)
+                {
+                    key: camelotWheel.find(k => k.position === position),
+                    relationship: "perfect-match",
+                    description: "Coming from same key - perfect harmonic match"
+                },
+                
+                // +1 hour (energy drop from the INCOMING perspective)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 12 ? 1 : num + 1}${type}`),
+                    relationship: "energy-drop",
+                    description: "Coming from key one fifth higher (+1) - smooth transition down"
+                },
+                
+                // -1 hour (energy boost from the INCOMING perspective)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 1 ? 12 : num - 1}${type}`),
+                    relationship: "energy-boost",
+                    description: "Coming from key one fifth lower (-1) - creates goosebumps"
+                },
+                
+                // +2 hour - THIS IS INCORRECT FOR INCOMING
+                // For a key to go TO the selected key with a +2 relationship,
+                // it needs to be 2 positions BEFORE the selected key
+                // Example: For 8A, the key that is +2 from 6A is 8A, so 6A can go TO 8A
+                {
+                    key: camelotWheel.find(k => k.position === `${num <= 2 ? num + 10 : num - 2}${type}`),
+                    relationship: "major-energy-drop",
+                    description: "Coming from a whole step lower (-2) - strong upward shift"
+                },
+                
+                // For INCOMING, the -3 position should be calculated as +3 from the current position
+                // Example: For 8A, a key with a -3 relationship TO it would be 11A
+                {
+                    key: camelotWheel.find(k => k.position === `${(num + 3) > 12 ? (num + 3) - 12 : (num + 3)}${type}`),
+                    relationship: "minor-third",
+                    description: "Coming from key 3 positions higher (+3) - this key plays well into yours"
+                },
+                
+                // Relative major/minor (same number, different letter)
+                {
+                    key: camelotWheel.find(k => k.position === `${num}${type === 'A' ? 'B' : 'A'}`),
+                    relationship: "relative-switch",
+                    description: "Coming from relative key - dramatic energy change, same notes"
+                },
+                
+                // For INCOMING, the +7 position is actually the key 5 positions later (or -7 positions)
+                // Example: For 8A, the key that's +7 from it is 3A, but that means 3A can go TO 8A
+                // So incoming would be a key with a -7 relationship (or +5)
+                {
+                    key: camelotWheel.find(k => k.position === `${(num + 5) > 12 ? (num + 5) - 12 : (num + 5)}${type}`),
+                    relationship: "dominant-switch",
+                    description: "Coming from a half step lower (-7 or +5) - percussive transition"
+                },
+                
+                // +1 and change letter (dominant of relative)
+                // For a key to go TO the selected key with a dominant relative relationship,
+                // it would be 1 position BEFORE the selected key with opposite letter type
+                // Example: For 8A, 7B can go to it (because 7B+1 with letter change = 8A)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 1 ? 12 : num - 1}${type === 'A' ? 'B' : 'A'}`),
+                    relationship: "dominant-relative",
+                    description: "Coming from key 1 position lower & letter change - transitions well to this"
+                },
+                
+                // -1 and change letter (subdominant of relative)
+                // For a key to go TO the selected key with a subdominant relative relationship,
+                // it would be 1 position AFTER the selected key with opposite letter type
+                // Example: For 8A, 9B can go to it (because 9B-1 with letter change = 8A)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 12 ? 1 : num + 1}${type === 'A' ? 'B' : 'A'}`),
+                    relationship: "subdominant-relative",
+                    description: "Coming from key 1 position higher & letter change - smooth transition"
+                }
+            ];
+            
+            // Same root note relationships (which depend on key type)
+            if (type === 'A') {
+                // For INCOMING to a Major key: The same root Minor that can go TO this key
+                // would be 3 positions BEFORE (e.g., 5B can go to 8A)
+                incomingItems.push({
+                    key: camelotWheel.find(k => k.position === `${num <= 3 ? num + 9 : num - 3}B`),
+                    relationship: "same-root",
+                    description: "Coming from same root Minor (-3 with letter change) - brightening the mood"
+                });
+            } else {
+                // For INCOMING to a Minor key: The same root Major that can go TO this key
+                // would be 3 positions AFTER (e.g., 11A can go to 8B)
+                incomingItems.push({
+                    key: camelotWheel.find(k => k.position === `${(num + 3) > 12 ? (num + 3) - 12 : (num + 3)}A`),
+                    relationship: "same-root",
+                    description: "Coming from same root Major (+3 with letter change) - darkening the mood"
+                });
+            }
+            
+            // Filter out items with undefined keys
+            return incomingItems.filter(item => item.key !== undefined);
+        }
+        
+        // Calculate keys the selected key can go TO (outgoing)
+        function getOutgoingKeys(selectedKey) {
+            const position = selectedKey.position;
+            const num = parseInt(position);
+            const type = position.slice(-1);
+            
+            const outgoingItems = [
+                // Same key (perfect match)
+                {
+                    key: camelotWheel.find(k => k.position === position),
+                    relationship: "perfect-match",
+                    description: "Go to same key - tracks \"sing together\""
+                },
+                
+                // +1 hour (energy boost)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 12 ? 1 : num + 1}${type}`),
+                    relationship: "energy-boost",
+                    description: "Go up a Fifth (+1) - raise energy, near-perfect compatibility"
+                },
+                
+                // -1 hour (energy drop)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 1 ? 12 : num - 1}${type}`),
+                    relationship: "energy-drop",
+                    description: "Go down a Fifth (-1) - take crowd deeper, create goosebumps"
+                },
+                
+                // +2 hour (major energy boost)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 11 ? 1 : num === 12 ? 2 : num + 2}${type}`),
+                    relationship: "major-energy-boost",
+                    description: "Go up a Whole Step (+2) - \"hands in the air\" energy boost mixing"
+                },
+                
+                // -3 hour (minor third relationship) - This is valid without letter change
+                {
+                    key: camelotWheel.find(k => k.position === `${num <= 3 ? num + 9 : num - 3}${type}`),
+                    relationship: "minor-third",
+                    description: "Go to key 3 positions lower (-3) - this key plays well into that one"
+                },
+                
+                // Relative major/minor (same number, different letter)
+                {
+                    key: camelotWheel.find(k => k.position === `${num}${type === 'A' ? 'B' : 'A'}`),
+                    relationship: "relative-switch",
+                    description: "Go to relative key - dramatic energy change with same notes"
+                },
+                
+                // For OUTGOING, the +7 position is the correct one
+                {
+                    key: camelotWheel.find(k => k.position === `${(num + 7) > 12 ? (num + 7) - 12 : (num + 7)}${type}`),
+                    relationship: "dominant-switch",
+                    description: "Go to a half step higher (+7) - dramatic energy boost with percussive mixing"
+                },
+                
+                // +1 and change letter (dominant of relative)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 12 ? 1 : num + 1}${type === 'A' ? 'B' : 'A'}`),
+                    relationship: "dominant-relative",
+                    description: "Go to dominant relative (+1 & letter) - great major/minor transition"
+                },
+                
+                // -1 and change letter (subdominant of relative)
+                {
+                    key: camelotWheel.find(k => k.position === `${num === 1 ? 12 : num - 1}${type === 'A' ? 'B' : 'A'}`),
+                    relationship: "subdominant-relative",
+                    description: "Go to subdominant relative (-1 & letter) - smooth major/minor transition"
+                }
+            ];
+            
+            // Same root note relationships (which depend on key type)
+            if (type === 'A') {
+                // For Major keys: Going to same root Minor
+                outgoingItems.push({
+                    key: camelotWheel.find(k => k.position === `${(num + 3) > 12 ? (num + 3) - 12 : (num + 3)}B`),
+                    relationship: "same-root",
+                    description: "Go to same root Minor (+3B) - darken the mood"
+                });
+            } else {
+                // For Minor keys: Going to same root Major
+                outgoingItems.push({
+                    key: camelotWheel.find(k => k.position === `${num <= 3 ? num + 9 : num - 3}A`),
+                    relationship: "same-root",
+                    description: "Go to same root Major (-3A) - brighten the mood"
+                });
+            }
+            
+            // Filter out items with undefined keys
+            return outgoingItems.filter(item => item.key !== undefined);
+        }
+
+        // Display results
+        function displayResults(incomingKeys, outgoingKeys) {
+            const incomingList = document.getElementById('incoming-keys');
+            const outgoingList = document.getElementById('outgoing-keys');
+            
+            incomingList.innerHTML = '';
+            outgoingList.innerHTML = '';
+            
+            // Display incoming keys
+            incomingKeys.forEach(relationship => {
+                const li = document.createElement('li');
+                
+                // Create key display element
+                const keyDisplay = document.createElement('div');
+                keyDisplay.className = 'result-key';
+                keyDisplay.textContent = `${relationship.key.position} - ${relationship.key.name}`;
+                li.appendChild(keyDisplay);
+                
+                // Create relationship description element
+                const description = document.createElement('div');
+                description.className = 'result-description';
+                description.textContent = relationship.description;
+                li.appendChild(description);
+                
+                // Add appropriate class based on relationship
+                li.classList.add(`result-${relationship.relationship}`);
+                
+                incomingList.appendChild(li);
+            });
+            
+            // Display outgoing keys
+            outgoingKeys.forEach(relationship => {
+                const li = document.createElement('li');
+                
+                // Create key display element
+                const keyDisplay = document.createElement('div');
+                keyDisplay.className = 'result-key';
+                keyDisplay.textContent = `${relationship.key.position} - ${relationship.key.name}`;
+                li.appendChild(keyDisplay);
+                
+                // Create relationship description element
+                const description = document.createElement('div');
+                description.className = 'result-description';
+                description.textContent = relationship.description;
+                li.appendChild(description);
+                
+                // Add appropriate class based on relationship
+                li.classList.add(`result-${relationship.relationship}`);
+                
+                outgoingList.appendChild(li);
+            });
+        }
+
+        // Select a key
+        function selectKey(key) {
+            // Clear previous selection
+            document.querySelectorAll('.segment.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Add selected class to current key
+            document.querySelector(`.segment[data-position="${key.position}"]`).classList.add('selected');
+            
+            // Get and display compatible keys
+            const compatibleKeys = getCompatibleKeys(key);
+            displayResults(compatibleKeys.incoming, compatibleKeys.outgoing);
+        }
+
+        // Initialize the wheel
+        window.onload = function() {
+            createWheel();
+            // Select 8A (C Major) by default
+            selectKey(camelotWheel.find(k => k.position === "8A"));
+        };
+    </script>
+    
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T3VQ6KZS"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+</body>
+</html>
