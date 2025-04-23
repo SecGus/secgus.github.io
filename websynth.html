@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FM Synthesis Learning Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr 250px;
+            grid-template-rows: auto auto auto auto auto;
+            grid-template-areas: 
+                "title title title"
+                "button-bar button-bar button-bar"
+                "spectrum operators waveform"
+                "spectrum side-settings waveform"
+                "explanation explanation explanation";
+            gap: 20px;
+            height: 100vh;
+        }
+        .page-title {
+            grid-area: title;
+        }
+        .button-bar {
+            grid-area: button-bar;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            justify-content: center;
+        }
+        .button-group {
+            display: flex;
+            gap: 5px;
+            margin-right: 15px;
+            align-items: center;
+        }
+        .button-group:last-child {
+            margin-right: 0;
+        }
+        .button-group-label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .waveform-viz, .spectrum-viz {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            width: 100%;
+        }
+        .waveform-viz {
+            grid-area: waveform;
+        }
+        .spectrum-viz {
+            grid-area: spectrum;
+        }
+        .viz-control-group {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            width: 220px;
+            margin: 0 auto;
+        }
+        .viz-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .vertical-canvas {
+            height: calc(100vh - 240px);
+            min-height: 350px;
+            width: 200px;
+            margin: 0 auto;
+            display: block;
+        }
+        .side-settings {
+            grid-area: side-settings;
+        }
+        .operators-section {
+            grid-area: operators;
+        }
+        .explanation-section {
+            grid-area: explanation;
+        }
+        .synth-controls {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .control-group {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .slider-container label {
+            width: 120px;
+        }
+        .slider-container input[type="range"] {
+            flex-grow: 1;
+        }
+        .slider-value {
+            width: 50px;
+            text-align: right;
+        }
+        canvas {
+            width: 100%;
+            height: 250px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        select {
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+        }
+        .operators-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+        }
+        .operator-box {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .algorithm-box {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .algorithm-visual {
+            text-align: center;
+            font-family: monospace;
+            white-space: pre;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .remove-btn {
+            background-color: #f44336;
+        }
+        .remove-btn:hover {
+            background-color: #d32f2f;
+        }
+        .add-btn {
+            background-color: #2196F3;
+        }
+        .add-btn:hover {
+            background-color: #0b7dda;
+        }
+        .waveform-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .waveform-option label {
+            margin-right: 10px;
+            width: 120px;
+        }
+        .button-row {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .custom-algorithm {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            margin-top: 10px;
+            border-top: 1px dashed #ccc;
+        }
+        .custom-algorithm textarea {
+            width: 100%;
+            height: 80px;
+            margin: 10px 0;
+            font-family: monospace;
+            padding: 5px;
+        }
+        .custom-algorithm-info {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="page-title">
+            <h1>FM Synthesis Tool</h1>
+            <p>Learn FM Synthesis by visualizing and hearing the results in real-time.</p>
+        </header>
+        
+        <div class="button-bar">
+            <div class="button-group">
+                <span class="button-group-label">Playback:</span>
+                <button id="play-btn">Play/Pause</button>
+                </div>
+            
+            <div class="button-group">
+                <span class="button-group-label">Presets:</span>
+                <button id="preset-1">Simple FM</button>
+                <button id="preset-2">Bell-like</button>
+                <button id="preset-3">Brass-like</button>
+                <button id="preset-4">Complex</button>
+            </div>
+            
+            <div class="button-group">
+                <span class="button-group-label">Tools:</span>
+                <button id="randomize-btn" class="add-btn">Randomize</button>
+                <button id="download-btn" class="add-btn">Download .wav</button>
+                <button id="stop-recording-btn" class="remove-btn" style="display: none;">Stop Recording</button>
+                </div>
+            </div>
+            
+        <div class="spectrum-viz">
+            <div class="viz-control-group">
+                <h3>Spectrum Visualization</h3>
+                <div class="viz-container">
+                    <canvas id="spectrum" class="vertical-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="waveform-viz">
+            <div class="viz-control-group">
+                <h3>Waveform Visualization</h3>
+                <div class="viz-container">
+                    <canvas id="waveform" class="vertical-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="side-settings">
+            <div class="control-group">
+                <h3>Global Settings</h3>
+                <div class="slider-container">
+                    <label for="master-volume">Master Volume:</label>
+                    <input type="range" id="master-volume" min="0" max="1" value="0.7" step="0.01">
+                    <span id="master-volume-value" class="slider-value">0.7</span>
+                </div>
+                <div class="slider-container">
+                    <label for="duration">Duration:</label>
+                    <input type="range" id="duration" min="1" max="30" value="30" step="1">
+                    <span id="duration-value" class="slider-value">∞</span>
+                </div>
+                <div class="algorithm-box">
+                    <label for="algorithm-select">Algorithm:</label>
+                    <select id="algorithm-select">
+                        <option value="0">Algorithm 1 (Series)</option>
+                        <option value="1">Algorithm 2 (Parallel)</option>
+                        <option value="2">Algorithm 3 (Complex)</option>
+                        <option value="3">Algorithm 4 (Multi-modulator)</option>
+                        <option value="4">Algorithm 5 (Stacked Pair)</option>
+                        <option value="5">Algorithm 6 (Dual Carriers)</option>
+                        <option value="7">Algorithm 7 (Feedback Stack)</option>
+                        <option value="8">Algorithm 8 (Diamond)</option>
+                        <option value="6">Algorithm 9 (1→2→3, 4)</option>
+                        <option value="custom">Custom Algorithm</option>
+                    </select>
+                    <div class="algorithm-visual" id="algorithm-visual">
+                        [OP1] → [OP2] → [OP3] → [OP4] → Output
+        </div>
+        
+                    <div class="custom-algorithm" id="custom-algorithm-editor" style="display: none;">
+                        <div class="custom-algorithm-info">
+                            Define connections using syntax: O1->O2 (Operator 1 modulates Operator 2)<br>
+                            Use OUT for output: O1->OUT (Operator 1 to output)<br>
+                            Separate multiple connections with semicolons or new lines
+        </div>
+                        <textarea id="custom-algorithm-code" placeholder="O1->O2;
+O2->O3;
+O3->O4;
+O4->OUT"></textarea>
+                        <div id="custom-algorithm-error" class="error-message"></div>
+                        <button id="apply-custom-algorithm" class="add-btn">Apply Custom Algorithm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="operators-section">
+            <div class="control-group">
+                <h3>Operators <button id="add-operator" class="add-btn">Add Operator</button></h3>
+                <div id="operators-container" class="operators-container">
+                    <!-- Operators will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="explanation-section control-group">
+            <h3>FM Synthesis Explanation</h3>
+            <p>FM synthesis works by using one or more oscillators (modulators) to modulate the frequency of other oscillators (carriers). The modulation index controls the amount of modulation, affecting the richness of the sound.</p>
+            <p>Key parameters:</p>
+            <ul>
+                <li><strong>Carrier Frequency</strong>: The base frequency of the sound</li>
+                <li><strong>Modulator Frequency</strong>: Affects the harmonic content</li>
+                <li><strong>Modulation Index</strong>: Controls the intensity of modulation</li>
+                <li><strong>Algorithm</strong>: Determines how operators connect to each other</li>
+                <li><strong>Waveform Type</strong>: Different waveforms create different timbres</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Audio Context
+        let audioContext;
+        let analyser;
+        let gainNode;
+        let isPlaying = false;
+        let restartTimer = null;
+        let currentDuration = 30;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        
+        // FM Synth State
+        const MAX_OPERATORS = 6;
+        const MIN_OPERATORS = 2;
+        let operators = [];
+        let connections = [];
+        let currentAlgorithm = 0;
+        let lastAlgorithm = 0;  // Track algorithm changes
+        let lastOperatorCount = 0;  // Track operator count changes
+        let lastWaveforms = [];  // Track waveform changes
+        
+        // Custom algorithm (will be dynamically updated)
+        let customAlgorithm = {
+            connections: [],
+            visual: "Custom Algorithm"
+        };
+        
+        // Algorithms - Connection patterns between operators
+        const algorithms = [
+            // Algorithm 1: Series (OP1 -> OP2 -> OP3 -> OP4 -> output)
+            {
+                connections: [
+                    [1, 0, 0, 0],  // OP1 connects to OP2
+                    [0, 1, 0, 0],  // OP2 connects to OP3
+                    [0, 0, 1, 0],  // OP3 connects to OP4
+                    [0, 0, 0, 1],  // OP4 connects to output
+                ],
+                visual: "[OP1] → [OP2] → [OP3] → [OP4] → Output"
+            },
+            // Algorithm 2: Parallel (All operators to output)
+            {
+                connections: [
+                    [0, 0, 0, 1],  // OP1 connects to output
+                    [0, 0, 0, 1],  // OP2 connects to output
+                    [0, 0, 0, 1],  // OP3 connects to output
+                    [0, 0, 0, 1],  // OP4 connects to output
+                ],
+                visual: "[OP1] ↘\n[OP2] → Output\n[OP3] ↗\n[OP4] ↗"
+            },
+            // Algorithm 3: Complex (OP1->OP2, OP1->OP4, OP3->OP4, OP2->output, OP4->output)
+            {
+                connections: [
+                    [1, 0, 1, 0],  // OP1 connects to OP2 and OP4
+                    [0, 0, 0, 1],  // OP2 connects to output
+                    [0, 0, 1, 0],  // OP3 connects to OP4
+                    [0, 0, 0, 1],  // OP4 connects to output
+                ],
+                visual: "[OP1] → [OP2] → Output\n  ↓\n  └→ [OP4] → Output\n     ↑\n[OP3] ─┘"
+            },
+            // Algorithm 4: Multi-modulator (OP1,OP2,OP3 all modulate OP4)
+            {
+                connections: [
+                    [0, 0, 1, 0],  // OP1 connects to OP4
+                    [0, 0, 1, 0],  // OP2 connects to OP4
+                    [0, 0, 1, 0],  // OP3 connects to OP4
+                    [0, 0, 0, 1],  // OP4 connects to output
+                ],
+                visual: "[OP1] ↘\n[OP2] → [OP4] → Output\n[OP3] ↗"
+            },
+            // Algorithm 5: Stacked Pair (OP1->OP2->output, OP3->OP4->output)
+            {
+                connections: [
+                    [1, 0, 0, 0],  // OP1 connects to OP2
+                    [0, 0, 0, 1],  // OP2 connects to output
+                    [0, 1, 0, 0],  // OP3 connects to OP4
+                    [0, 0, 0, 1],  // OP4 connects to output
+                ],
+                visual: "[OP1] → [OP2] ↘\n             Output\n[OP3] → [OP4] ↗"
+            },
+            // Algorithm 6: Dual Carriers (OP1->OP3->output, OP2->OP4->output)
+            {
+                connections: [
+                    [0, 0, 1, 0],  // OP1 connects to OP3
+                    [0, 0, 0, 1],  // OP2 connects to OP4
+                    [0, 0, 0, 1],  // OP3 connects to output
+                    [0, 0, 0, 1],  // OP4 connects to output
+                ],
+                visual: "[OP1] → [OP3] ↘\n             Output\n[OP2] → [OP4] ↗"
+            },
+            // Algorithm 7: Feedback Stack (OP1->OP2->OP3->OP4->output, OP4->OP1)
+            {
+                connections: [
+                    [1, 0, 0, 0],  // OP1 connects to OP2
+                    [0, 1, 0, 0],  // OP2 connects to OP3
+                    [0, 0, 1, 0],  // OP3 connects to OP4
+                    [1, 0, 0, 1],  // OP4 connects to output and OP1 (feedback)
+                ],
+                visual: "┌────────────────────┐\n↓                    │\n[OP1] → [OP2] → [OP3] → [OP4] → Output"
+            },
+            // Algorithm 8: Diamond (OP1->OP2,OP3, OP2,OP3->OP4, OP4->output)
+            {
+                connections: [
+                    [1, 1, 0, 0],  // OP1 connects to OP2 and OP3
+                    [0, 0, 1, 0],  // OP2 connects to OP4
+                    [0, 0, 1, 0],  // OP3 connects to OP4
+                    [0, 0, 0, 1],  // OP4 connects to output
+                ],
+                visual: "     [OP1]\n    ↙     ↘\n[OP2]     [OP3]\n    ↘     ↙\n     [OP4]\n       ↓\n     Output"
+            },
+            // Algorithm 9: 1→2→3, 4 (OP1->OP2->OP3->output, OP4->output)
+            {
+                connections: [
+                    [1, 0, 0, 0],  // OP1 connects to OP2
+                    [0, 1, 0, 0],  // OP2 connects to OP3
+                    [0, 0, 0, 1],  // OP3 connects to output
+                    [0, 0, 0, 1],  // OP4 connects directly to output
+                ],
+                visual: "[OP1] → [OP2] → [OP3] ↘\n                 Output\n      [OP4] --------↗"
+            }
+        ];
+        
+        // Get UI elements
+        const playBtn = document.getElementById('play-btn');
+        const masterVolumeSlider = document.getElementById('master-volume');
+        const masterVolumeValue = document.getElementById('master-volume-value');
+        const durationSlider = document.getElementById('duration');
+        const durationValue = document.getElementById('duration-value');
+        const algorithmSelect = document.getElementById('algorithm-select');
+        const algorithmVisual = document.getElementById('algorithm-visual');
+        const operatorsContainer = document.getElementById('operators-container');
+        const addOperatorBtn = document.getElementById('add-operator');
+        
+        const waveformCanvas = document.getElementById('waveform');
+        const waveformCtx = waveformCanvas.getContext('2d');
+        const spectrumCanvas = document.getElementById('spectrum');
+        const spectrumCtx = spectrumCanvas.getContext('2d');
+        
+        // Operator class to handle state and UI
+        class Operator {
+            constructor(id) {
+                this.id = id;
+                this.frequency = 200 * (id + 1);
+                this.freqRatio = 1.0;
+                this.level = 0.8;
+                this.waveform = 'sine';
+                this.isOutput = id === 3; // By default, make the last operator the output
+                this.createUI();
+            }
+            
+            createUI() {
+                const operatorEl = document.createElement('div');
+                operatorEl.className = 'operator-box';
+                operatorEl.id = `operator-${this.id}`;
+                
+                operatorEl.innerHTML = `
+                    <h4>Operator ${this.id + 1}</h4>
+                    <div class="waveform-option">
+                        <label for="waveform-${this.id}">Waveform:</label>
+                        <select id="waveform-${this.id}">
+                            <option value="sine" ${this.waveform === 'sine' ? 'selected' : ''}>Sine</option>
+                            <option value="square" ${this.waveform === 'square' ? 'selected' : ''}>Square</option>
+                            <option value="sawtooth" ${this.waveform === 'sawtooth' ? 'selected' : ''}>Sawtooth</option>
+                            <option value="triangle" ${this.waveform === 'triangle' ? 'selected' : ''}>Triangle</option>
+                        </select>
+                    </div>
+                    <div class="slider-container">
+                        <label for="freq-${this.id}">Frequency:</label>
+                        <input type="range" id="freq-${this.id}" min="50" max="1000" value="${this.frequency}" step="1">
+                        <span id="freq-${this.id}-value" class="slider-value">${this.frequency} Hz</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="ratio-${this.id}">Frequency Ratio:</label>
+                        <input type="range" id="ratio-${this.id}" min="0.1" max="10" value="${this.freqRatio}" step="0.1">
+                        <span id="ratio-${this.id}-value" class="slider-value">${this.freqRatio}</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="level-${this.id}">Level:</label>
+                        <input type="range" id="level-${this.id}" min="0" max="1" value="${this.level}" step="0.01">
+                        <span id="level-${this.id}-value" class="slider-value">${this.level}</span>
+                    </div>
+                    ${operators.length > MIN_OPERATORS ? 
+                    `<button id="remove-op-${this.id}" class="remove-btn">Remove Operator</button>` : ''}
+                `;
+                
+                operatorsContainer.appendChild(operatorEl);
+                
+                // Add event listeners
+                document.getElementById(`waveform-${this.id}`).addEventListener('change', (e) => {
+                    this.waveform = e.target.value;
+                    lastWaveforms[this.id] = this.waveform;
+                    updateSynth();
+                });
+                
+                document.getElementById(`freq-${this.id}`).addEventListener('input', (e) => {
+                    this.frequency = parseFloat(e.target.value);
+                    document.getElementById(`freq-${this.id}-value`).textContent = `${this.frequency} Hz`;
+                    updateSynth();
+                });
+                
+                document.getElementById(`ratio-${this.id}`).addEventListener('input', (e) => {
+                    this.freqRatio = parseFloat(e.target.value);
+                    document.getElementById(`ratio-${this.id}-value`).textContent = this.freqRatio;
+                    updateSynth();
+                });
+                
+                document.getElementById(`level-${this.id}`).addEventListener('input', (e) => {
+                    this.level = parseFloat(e.target.value);
+                    document.getElementById(`level-${this.id}-value`).textContent = this.level;
+                    updateSynth();
+                });
+                
+                // Add remove button functionality
+                if (operators.length > MIN_OPERATORS) {
+                    document.getElementById(`remove-op-${this.id}`).addEventListener('click', () => {
+                        removeOperator(this.id);
+                    });
+                }
+            }
+            
+            updateUI() {
+                if (document.getElementById(`operator-${this.id}`)) {
+                    document.getElementById(`freq-${this.id}`).value = this.frequency;
+                    document.getElementById(`freq-${this.id}-value`).textContent = `${this.frequency} Hz`;
+                    document.getElementById(`ratio-${this.id}`).value = this.freqRatio;
+                    document.getElementById(`ratio-${this.id}-value`).textContent = this.freqRatio;
+                    document.getElementById(`level-${this.id}`).value = this.level;
+                    document.getElementById(`level-${this.id}-value`).textContent = this.level;
+                    document.getElementById(`waveform-${this.id}`).value = this.waveform;
+                }
+            }
+        }
+        
+        // Add a new operator
+        function addOperator() {
+            if (operators.length < MAX_OPERATORS) {
+                const newOp = new Operator(operators.length);
+                operators.push(newOp);
+                updateAlgorithm();
+                
+                // Disable add button if at max
+                if (operators.length >= MAX_OPERATORS) {
+                    addOperatorBtn.disabled = true;
+                }
+                
+                // Update remove buttons
+                updateRemoveButtons();
+            }
+        }
+        
+        // Remove an operator
+        function removeOperator(id) {
+            if (operators.length > MIN_OPERATORS) {
+                // Remove the operator element
+                const opEl = document.getElementById(`operator-${id}`);
+                if (opEl) opEl.remove();
+                
+                // Remove from operators array
+                operators.splice(id, 1);
+                
+                // Re-index remaining operators
+                for (let i = 0; i < operators.length; i++) {
+                    operators[i].id = i;
+                }
+                
+                // Rebuild UI
+                rebuildOperatorsUI();
+                updateAlgorithm();
+                
+                // Enable add button if below max
+                if (operators.length < MAX_OPERATORS) {
+                    addOperatorBtn.disabled = false;
+                }
+            }
+        }
+        
+        // Rebuild all operator UI elements
+        function rebuildOperatorsUI() {
+            operatorsContainer.innerHTML = '';
+            operators.forEach(op => op.createUI());
+        }
+        
+        // Update remove buttons based on number of operators
+        function updateRemoveButtons() {
+            operators.forEach((op, index) => {
+                const removeBtn = document.getElementById(`remove-op-${index}`);
+                if (removeBtn) {
+                    removeBtn.style.display = operators.length > MIN_OPERATORS ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // Update algorithm connections
+        function updateAlgorithm() {
+            const index = algorithmSelect.value;
+            currentAlgorithm = index;
+            
+            // Adjust algorithm connections based on number of operators
+            const numOps = operators.length;
+            connections = [];
+            
+            // Create connection matrix based on algorithm and number of operators
+            for (let i = 0; i < numOps; i++) {
+                const row = new Array(numOps + 1).fill(0); // +1 for output
+                connections.push(row);
+            }
+            
+            if (index === 'custom') {
+                // Apply custom algorithm with current number of operators
+                applyCustomAlgorithm();
+                return;
+            }
+            
+            // Apply algorithm pattern, scaling to fit current number of operators
+            switch (parseInt(index)) {
+                case 0: // Series
+                    for (let i = 0; i < numOps - 1; i++) {
+                        connections[i][i+1] = 1; // Each operator connects to the next
+                    }
+                    connections[numOps-1][numOps] = 1; // Last operator connects to output
+                    break;
+                case 1: // Parallel
+                    for (let i = 0; i < numOps; i++) {
+                        connections[i][numOps] = 1; // All connect to output
+                    }
+                    break;
+                case 2: // Complex
+                    if (numOps >= 3) {
+                        connections[0][1] = 1; // OP1 -> OP2
+                        connections[0][numOps-1] = 1; // OP1 -> Last OP
+                        connections[numOps-2][numOps-1] = 1; // Second to last -> Last OP
+                        connections[1][numOps] = 1; // OP2 -> output
+                        connections[numOps-1][numOps] = 1; // Last OP -> output
+                    } else {
+                        // Fallback for less than 3 operators
+                        connections[0][1] = 1;
+                        connections[1][numOps] = 1;
+                    }
+                    break;
+                case 3: // Multi-modulator
+                    if (numOps >= 3) {
+                        for (let i = 0; i < numOps - 1; i++) {
+                            connections[i][numOps-1] = 1; // All except last modulate the last
+                        }
+                        connections[numOps-1][numOps] = 1; // Last connects to output
+                    } else {
+                        // Fallback for less than 3 operators
+                        connections[0][1] = 1;
+                        connections[1][numOps] = 1;
+                    }
+                    break;
+                case 4: // Stacked Pair
+                    if (numOps >= 4) {
+                        connections[0][1] = 1; // OP1 -> OP2
+                        connections[1][numOps] = 1; // OP2 -> output
+                        connections[2][3] = 1; // OP3 -> OP4
+                        connections[3][numOps] = 1; // OP4 -> output
+                    } else if (numOps === 3) {
+                        connections[0][1] = 1; // OP1 -> OP2
+                        connections[1][numOps] = 1; // OP2 -> output
+                        connections[2][numOps] = 1; // OP3 -> output directly
+                    } else {
+                        // Fallback for 2 operators
+                        connections[0][1] = 1;
+                        connections[1][numOps] = 1;
+                    }
+                    break;
+                case 5: // Dual Carriers
+                    if (numOps >= 4) {
+                        connections[0][2] = 1; // OP1 -> OP3
+                        connections[1][3] = 1; // OP2 -> OP4
+                        connections[2][numOps] = 1; // OP3 -> output
+                        connections[3][numOps] = 1; // OP4 -> output
+                    } else if (numOps === 3) {
+                        connections[0][2] = 1; // OP1 -> OP3
+                        connections[1][numOps] = 1; // OP2 -> output directly
+                        connections[2][numOps] = 1; // OP3 -> output
+                    } else {
+                        // Fallback for 2 operators
+                        connections[0][1] = 1;
+                        connections[1][numOps] = 1;
+                    }
+                    break;
+                case 6: // 1→2→3, 4
+                    if (numOps >= 4) {
+                        connections[0][1] = 1; // OP1 -> OP2
+                        connections[1][2] = 1; // OP2 -> OP3
+                        connections[2][numOps] = 1; // OP3 -> output
+                        connections[3][numOps] = 1; // OP4 -> output directly
+                    } else if (numOps === 3) {
+                        connections[0][1] = 1; // OP1 -> OP2
+                        connections[1][numOps] = 1; // OP2 -> output
+                        connections[2][numOps] = 1; // OP3 -> output directly
+                    } else {
+                        // Fallback for 2 operators
+                        connections[0][1] = 1;
+                        connections[1][numOps] = 1;
+                    }
+                    break;
+                case 7: // Feedback Stack
+                    for (let i = 0; i < numOps - 1; i++) {
+                        connections[i][i+1] = 1; // Each operator connects to the next
+                    }
+                    connections[numOps-1][numOps] = 1; // Last operator connects to output
+                    connections[numOps-1][0] = 1; // Feedback from last to first
+                    break;
+                case 8: // Diamond
+                    if (numOps >= 4) {
+                        connections[0][1] = 1; // OP1 -> OP2
+                        connections[0][2] = 1; // OP1 -> OP3
+                        connections[1][3] = 1; // OP2 -> OP4
+                        connections[2][3] = 1; // OP3 -> OP4
+                        connections[3][numOps] = 1; // OP4 -> output
+                    } else if (numOps === 3) {
+                        connections[0][1] = 1; // OP1 -> OP2
+                        connections[0][2] = 1; // OP1 -> OP3
+                        connections[1][numOps] = 1; // OP2 -> output
+                        connections[2][numOps] = 1; // OP3 -> output
+                    } else {
+                        // Fallback for 2 operators
+                        connections[0][1] = 1;
+                        connections[1][numOps] = 1;
+                    }
+                    break;
+                default:
+                    // Fallback to series for any other algorithm
+                    for (let i = 0; i < numOps - 1; i++) {
+                        connections[i][i+1] = 1; // Each operator connects to the next
+                    }
+                    connections[numOps-1][numOps] = 1; // Last operator connects to output
+            }
+            
+            // Update algorithm visualization
+            updateAlgorithmVisual();
+        }
+        
+        // Update the algorithm visualization
+        function updateAlgorithmVisual() {
+            if (currentAlgorithm === 'custom') {
+                algorithmVisual.textContent = customAlgorithm.visual;
+                return;
+            }
+            
+            algorithmVisual.textContent = getAlgorithmVisual();
+        }
+        
+        // Generate a text representation of the current algorithm
+        function getAlgorithmVisual() {
+            const numOps = operators.length;
+            let visual = '';
+            
+            switch (currentAlgorithm) {
+                case 0: // Series
+                    for (let i = 0; i < numOps; i++) {
+                        visual += `[OP${i+1}]`;
+                        if (i < numOps - 1) {
+                            visual += ' → ';
+                        }
+                    }
+                    visual += ' → Output';
+                    break;
+                case 1: // Parallel
+                    for (let i = 0; i < numOps; i++) {
+                        if (i === 0) {
+                            visual += `[OP${i+1}] ↘\n`;
+                        } else if (i === numOps - 1) {
+                            visual += `[OP${i+1}] ↗`;
+                        } else if (i === Math.floor(numOps/2)) {
+                            visual += `[OP${i+1}] → Output\n`;
+                        } else {
+                            visual += `[OP${i+1}] ${i < Math.floor(numOps/2) ? '↘' : '↗'}\n`;
+                        }
+                    }
+                    break;
+                case 2: // Complex
+                    if (numOps >= 3) {
+                        visual = `[OP1] → [OP2] → Output\n  ↓\n  └→ [OP${numOps}] → Output\n     ↑\n[OP${numOps-1}] ─┘`;
+                    } else {
+                        visual = `[OP1] → [OP2] → Output`;
+                    }
+                    break;
+                case 3: // Multi-modulator
+                    for (let i = 0; i < numOps - 1; i++) {
+                        if (i === 0) {
+                            visual += `[OP${i+1}] ↘\n`;
+                        } else if (i === numOps - 2) {
+                            visual += `[OP${i+1}] ↗\n`;
+                        } else {
+                            visual += `[OP${i+1}] ${i < Math.floor((numOps-1)/2) ? '↘' : '→'}\n`;
+                        }
+                    }
+                    visual += `     [OP${numOps}] → Output`;
+                    break;
+                case 4: // Stacked Pair
+                    if (numOps >= 4) {
+                        visual = `[OP1] → [OP2] ↘\n             Output\n[OP3] → [OP4] ↗`;
+                    } else if (numOps === 3) {
+                        visual = `[OP1] → [OP2] ↘\n             Output\n[OP3] -------↗`;
+                    } else {
+                        visual = `[OP1] → [OP2] → Output`;
+                    }
+                    break;
+                case 5: // Dual Carriers
+                    if (numOps >= 4) {
+                        visual = `[OP1] → [OP3] ↘\n             Output\n[OP2] → [OP4] ↗`;
+                    } else if (numOps === 3) {
+                        visual = `[OP1] → [OP3] ↘\n             Output\n[OP2] -------↗`;
+                    } else {
+                        visual = `[OP1] → [OP2] → Output`;
+                    }
+                    break;
+                case 6: // 1→2→3, 4
+                    if (numOps >= 4) {
+                        visual = `[OP1] → [OP2] → [OP3] ↘\n                 Output\n      [OP4] --------↗`;
+                    } else if (numOps === 3) {
+                        visual = `[OP1] → [OP2] ↘\n             Output\n[OP3] -------↗`;
+                    } else {
+                        visual = `[OP1] → [OP2] → Output`;
+                    }
+                    break;
+                case 7: // Feedback Stack
+                    visual = `┌────────────────${numOps > 3 ? "────" : ""}────┐\n↓                ${numOps > 3 ? "    " : ""} │\n`;
+                    for (let i = 0; i < numOps; i++) {
+                        visual += `[OP${i+1}]`;
+                        if (i < numOps - 1) {
+                            visual += ' → ';
+                        }
+                    }
+                    visual += ' → Output';
+                    break;
+                case 8: // Diamond
+                    if (numOps >= 4) {
+                        visual = `     [OP1]\n    ↙     ↘\n[OP2]     [OP3]\n    ↘     ↙\n     [OP4]\n       ↓\n     Output`;
+                    } else if (numOps === 3) {
+                        visual = `  [OP1]\n ↙     ↘\n[OP2]   [OP3]\n ↘     ↙\n  Output`;
+                    } else {
+                        visual = `[OP1] → [OP2] → Output`;
+                    }
+                    break;
+                default:
+                    // Fallback to series for any other algorithm
+                    for (let i = 0; i < numOps; i++) {
+                        visual += `[OP${i+1}]`;
+                        if (i < numOps - 1) {
+                            visual += ' → ';
+                        }
+                    }
+                    visual += ' → Output';
+            }
+            
+            return visual;
+        }
+        
+        // Initialize canvases
+        function setupCanvases() {
+            // Set actual pixel dimensions to match CSS dimensions for sharp rendering
+            waveformCanvas.width = waveformCanvas.offsetWidth;
+            waveformCanvas.height = waveformCanvas.offsetHeight;
+            spectrumCanvas.width = spectrumCanvas.offsetWidth;
+            spectrumCanvas.height = spectrumCanvas.offsetHeight;
+            
+            // Clear canvases initially
+            waveformCtx.fillStyle = 'rgb(240, 240, 240)';
+            waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            spectrumCtx.fillStyle = 'rgb(240, 240, 240)';
+            spectrumCtx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+            
+            // Draw reference lines or text when not playing
+            if (!isPlaying) {
+                // Waveform center line
+                waveformCtx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(waveformCanvas.width / 2, 0);
+                waveformCtx.lineTo(waveformCanvas.width / 2, waveformCanvas.height);
+                waveformCtx.stroke();
+                
+                // Spectrum initial text
+                spectrumCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                spectrumCtx.font = '12px Arial';
+                spectrumCtx.textAlign = 'center';
+                spectrumCtx.fillText('Frequency Spectrum', spectrumCanvas.width / 2, 20);
+                spectrumCtx.fillText('(Press Play to view)', spectrumCanvas.width / 2, 40);
+            }
+        }
+        
+        // Initialize audio
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            
+            // Create master gain node
+            gainNode = audioContext.createGain();
+            gainNode.gain.value = parseFloat(masterVolumeSlider.value);
+            
+            // Create a destination for recording
+            window.destinationNode = audioContext.createMediaStreamDestination();
+            
+            // Connect to output
+            gainNode.connect(analyser);
+            gainNode.connect(window.destinationNode);
+            analyser.connect(audioContext.destination);
+        }
+        
+        // Create the FM synth
+        function createFMSynth() {
+            if (!audioContext) {
+                initAudio();
+            }
+            
+            // Create all oscillators and gain nodes
+            const oscNodes = [];
+            const gainNodes = [];
+            const modGains = []; // Store modulation gain nodes
+            
+            // First create all nodes
+            for (let i = 0; i < operators.length; i++) {
+                const op = operators[i];
+                
+                // Create oscillator
+                const osc = audioContext.createOscillator();
+                osc.type = op.waveform;
+                osc.frequency.value = op.frequency * op.freqRatio;
+                
+                // Create gain node for the operator
+                const gain = audioContext.createGain();
+                gain.gain.value = op.level;
+                
+                oscNodes.push(osc);
+                gainNodes.push(gain);
+                
+                // Each operator gets an array for its modulation gains
+                modGains.push([]);
+            }
+            
+            // Set up connections according to algorithm
+            for (let i = 0; i < operators.length; i++) {
+                // Connect oscillator to its gain node
+                oscNodes[i].connect(gainNodes[i]);
+                
+                // Check for connections to other operators
+                for (let j = 0; j < operators.length; j++) {
+                    if (connections[i][j] === 1) {
+                        // This operator modulates operator j's frequency
+                        // Scale the modulation amount for audible FM effects
+                        // We need a separate gain node for modulation amount
+            const modGain = audioContext.createGain();
+                        // Scale by the target frequency for appropriate modulation depth
+                        // Multiply by 3-5 for more pronounced effect
+                        modGain.gain.value = operators[i].level * operators[j].frequency * 5;
+                        
+                        // Connect through the modulation gain node
+                        gainNodes[i].connect(modGain);
+                        modGain.connect(oscNodes[j].frequency);
+                        
+                        // Store this modulation gain for future updates
+                        modGains[i][j] = modGain;
+                    }
+                }
+                
+                // Check if connects to output
+                if (connections[i][operators.length] === 1) {
+                    gainNodes[i].connect(gainNode);
+                }
+            }
+            
+            // Start all oscillators
+            oscNodes.forEach(osc => osc.start());
+            
+            // Set up restart timer if duration is not max
+            if (currentDuration < 30) {
+                clearTimeout(restartTimer);
+                restartTimer = setTimeout(() => {
+                    stopSynth();
+                    createFMSynth();
+                }, currentDuration * 1000);
+            }
+            
+            // Store nodes for updating and stopping later
+            window.oscNodes = oscNodes;
+            window.gainNodes = gainNodes;
+            window.modGains = modGains;
+        }
+        
+        // Update synth parameters without restarting
+        function updateSynthParams() {
+            if (!isPlaying || !window.oscNodes) return;
+            
+            const oscNodes = window.oscNodes;
+            const gainNodes = window.gainNodes;
+            const modGains = window.modGains;
+            
+            // Update each operator's parameters
+            for (let i = 0; i < operators.length && i < oscNodes.length; i++) {
+                const op = operators[i];
+                
+                // Update amplitude/level
+                if (gainNodes[i]) {
+                    gainNodes[i].gain.setValueAtTime(op.level, audioContext.currentTime);
+                }
+                
+                // Update frequency (and apply ratio)
+                if (oscNodes[i]) {
+                    oscNodes[i].frequency.setValueAtTime(
+                        op.frequency * op.freqRatio, 
+                        audioContext.currentTime
+                    );
+                }
+                
+                // Update modulation amounts
+                if (modGains[i]) {
+                    for (let j = 0; j < operators.length; j++) {
+                        if (modGains[i][j]) {
+                            modGains[i][j].gain.setValueAtTime(
+                                op.level * operators[j].frequency * 5,
+                                audioContext.currentTime
+                            );
+                        }
+                    }
+                }
+            }
+            
+            // Update master volume
+            if (gainNode) {
+                gainNode.gain.setValueAtTime(
+                    parseFloat(masterVolumeSlider.value),
+                    audioContext.currentTime
+                );
+            }
+        }
+        
+        // Stop synth
+        function stopSynth() {
+            if (window.oscNodes) {
+                window.oscNodes.forEach(osc => {
+                    try {
+                        osc.stop();
+                        osc.disconnect();
+                    } catch (e) {
+                        // Ignore errors if already disconnected
+                    }
+                });
+                
+                window.gainNodes.forEach(gain => {
+                    try {
+                        gain.disconnect();
+                    } catch (e) {
+                        // Ignore errors if already disconnected
+                    }
+                });
+                
+                window.oscNodes = null;
+                window.gainNodes = null;
+                window.modGains = null;
+            }
+            
+            if (restartTimer) {
+                clearTimeout(restartTimer);
+                restartTimer = null;
+            }
+        }
+        
+        // Update synth - decides whether to restart or just update parameters
+        function updateSynth() {
+            if (!isPlaying) return;
+            
+            const needsRestart = checkIfNeedsRestart();
+            
+            if (needsRestart) {
+                // Store the recording state before stopping the synth
+                const wasRecording = isRecording;
+                
+                // Temporarily detach the stop recording function if we're recording
+                let tempMediaRecorder = null;
+                if (wasRecording && mediaRecorder) {
+                    tempMediaRecorder = mediaRecorder;
+                }
+                
+                stopSynth();
+                createFMSynth();
+                
+                // If we were recording, ensure recording continues with the new synth
+                if (wasRecording && tempMediaRecorder) {
+                    // The media recorder should still be connected to the destination node
+                    // No need to recreate it since we're maintaining the AudioContext
+                }
+            } else {
+                // Just update parameters in real-time without restarting
+                updateSynthParams();
+            }
+        }
+        
+        // Check if synth needs to be restarted for parameter changes
+        function checkIfNeedsRestart() {
+            // If the algorithm changed, needs restart
+            if (lastAlgorithm !== currentAlgorithm) {
+                lastAlgorithm = currentAlgorithm;
+                return true;
+            }
+            
+            // If number of operators changed, needs restart
+            if (lastOperatorCount !== operators.length) {
+                lastOperatorCount = operators.length;
+                return true;
+            }
+            
+            // If any waveform type changed, needs restart
+            for (let i = 0; i < operators.length; i++) {
+                if (lastWaveforms[i] !== operators[i].waveform) {
+                    // Update stored waveforms
+                    lastWaveforms = operators.map(op => op.waveform);
+                    return true;
+                }
+            }
+            
+            // Otherwise, can just update parameters
+            return false;
+        }
+        
+        // Parse and apply a custom algorithm
+        function applyCustomAlgorithm() {
+            const algorithmCode = document.getElementById('custom-algorithm-code').value;
+            const errorElement = document.getElementById('custom-algorithm-error');
+            const numOps = operators.length;
+            
+            // Reset error message
+            errorElement.style.display = 'none';
+            errorElement.textContent = '';
+            
+            // Create empty connection matrix
+            const newConnections = [];
+            for (let i = 0; i < numOps; i++) {
+                const row = new Array(numOps + 1).fill(0); // +1 for output
+                newConnections.push(row);
+            }
+            
+            // Split into connections
+            const connectionStrings = algorithmCode.replace(/\s+/g, '').split(/[;\n,]+/);
+            let visualText = "Custom:\n";
+            const visualConnections = {};
+            
+            // Process each connection
+            try {
+                for (let conn of connectionStrings) {
+                    if (!conn) continue; // Skip empty connections
+                    
+                    // Match the pattern OX->OY or OX->OUT
+                    const match = conn.match(/O(\d+)->(?:O(\d+)|OUT)/i);
+                    if (!match) {
+                        throw new Error(`Invalid connection syntax: ${conn}`);
+                    }
+                    
+                    const fromOp = parseInt(match[1]) - 1; // 0-based index
+                    const toOutput = match[2] === undefined;
+                    const toOp = toOutput ? numOps : parseInt(match[2]) - 1; // output is represented as numOps
+                    
+                    // Validate operator indices
+                    if (fromOp < 0 || fromOp >= numOps) {
+                        throw new Error(`Invalid operator index: O${fromOp + 1}`);
+                    }
+                    
+                    if (!toOutput && (toOp < 0 || toOp >= numOps)) {
+                        throw new Error(`Invalid operator index: O${toOp + 1}`);
+                    }
+                    
+                    // Set the connection
+                    newConnections[fromOp][toOp] = 1;
+                    
+                    // Add to visual representation
+                    const fromKey = `O${fromOp + 1}`;
+                    const toKey = toOutput ? 'OUT' : `O${toOp + 1}`;
+                    
+                    if (!visualConnections[fromKey]) {
+                        visualConnections[fromKey] = [];
+                    }
+                    visualConnections[fromKey].push(toKey);
+                }
+                
+                // Build visual representation
+                for (const [from, tos] of Object.entries(visualConnections)) {
+                    visualText += `${from} → ${tos.join(', ')}\n`;
+                }
+                
+                // If no errors, apply the custom algorithm
+                customAlgorithm.connections = newConnections;
+                customAlgorithm.visual = visualText;
+                
+                // Apply connections
+                connections = newConnections;
+                
+                // Update and apply
+                updateAlgorithmVisual();
+                updateSynth();
+                
+            } catch (error) {
+                // Show error
+                errorElement.textContent = error.message;
+                errorElement.style.display = 'block';
+            }
+        }
+        
+        // Draw waveform (vertically)
+        function drawWaveform() {
+            requestAnimationFrame(drawWaveform);
+            
+            if (!isPlaying) return;
+            
+            const bufferLength = analyser.fftSize;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+            
+            waveformCtx.fillStyle = 'rgb(240, 240, 240)';
+            waveformCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            waveformCtx.lineWidth = 2;
+            waveformCtx.strokeStyle = 'rgb(0, 0, 0)';
+            waveformCtx.beginPath();
+            
+            // Draw vertically (rotated 90 degrees)
+            const sliceHeight = waveformCanvas.height / bufferLength;
+            let y = 0;
+            
+            // Zoom out factor - reduce this to zoom out more
+            const zoomFactor = 0.35; // Reduced from 0.5 to zoom out
+            const centerX = waveformCanvas.width / 2;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                // Apply zoom factor to scale the amplitude
+                const x = (v - 1) * waveformCanvas.width * zoomFactor;
+                
+                if (i === 0) {
+                    waveformCtx.moveTo(centerX + x, y);
+                } else {
+                    waveformCtx.lineTo(centerX + x, y);
+                }
+                
+                y += sliceHeight;
+            }
+            
+            waveformCtx.lineTo(waveformCanvas.width / 2, waveformCanvas.height);
+            waveformCtx.stroke();
+            
+            // Draw center line
+            waveformCtx.beginPath();
+            waveformCtx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+            waveformCtx.moveTo(waveformCanvas.width / 2, 0);
+            waveformCtx.lineTo(waveformCanvas.width / 2, waveformCanvas.height);
+            waveformCtx.stroke();
+            
+            // Draw scale lines
+            waveformCtx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            
+            // Draw scale lines at 25%, 50%, and 75% of each side
+            const scalePositions = [0.25, 0.5, 0.75];
+            for (const pos of scalePositions) {
+                // Left side scale line
+                const leftX = centerX - (centerX * pos);
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(leftX, 0);
+                waveformCtx.lineTo(leftX, waveformCanvas.height);
+                waveformCtx.stroke();
+                
+                // Right side scale line
+                const rightX = centerX + (centerX * pos);
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(rightX, 0);
+                waveformCtx.lineTo(rightX, waveformCanvas.height);
+            waveformCtx.stroke();
+            }
+        }
+        
+        // Draw spectrum (vertically)
+        function drawSpectrum() {
+            requestAnimationFrame(drawSpectrum);
+            
+            if (!isPlaying) return;
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Clear the canvas first
+            spectrumCtx.fillStyle = 'rgb(240, 240, 240)';
+            spectrumCtx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+            
+            // Calculate the visible portion of the frequency spectrum
+            // Use only the first 1/4 of the frequency bins for better visualization
+            const visibleBins = Math.min(bufferLength / 4, 256);
+            const barHeight = spectrumCanvas.height / visibleBins;
+            
+            // Draw frequency bars - MIRRORED (low frequencies at top)
+            for (let i = 0; i < visibleBins; i++) {
+                // Use direct index (low frequencies first)
+                const index = i;
+                
+                // Normalize the amplitude value (0-255) to the canvas width
+                const amplitude = dataArray[index];
+                const barWidth = (amplitude / 255) * (spectrumCanvas.width - 20); // Leave margin
+                
+                // Color based on frequency and amplitude
+                const intensity = Math.min(255, amplitude + 50);
+                spectrumCtx.fillStyle = `rgb(50, ${intensity}, 50)`;
+                
+                // Calculate Y position (starting from top)
+                const y = i * barHeight;
+                
+                // Draw the bar
+                spectrumCtx.fillRect(10, y, barWidth, barHeight - 1);
+            }
+            
+            // Draw frequency markers
+            spectrumCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            spectrumCtx.font = '10px Arial';
+            
+            // Get the Nyquist frequency (half the sample rate)
+            const sampleRate = audioContext ? audioContext.sampleRate : 44100;
+            const nyquist = sampleRate / 2;
+            
+            // Draw markers at different points (mirrored)
+            const freqMarkers = [100, 500, 1000, 5000, 10000];
+            for (const freq of freqMarkers) {
+                if (freq > nyquist) continue;
+                
+                // Calculate vertical position (flipped from before)
+                const position = Math.floor(spectrumCanvas.height * (freq / nyquist));
+                if (position < 0 || position > spectrumCanvas.height) continue;
+                
+                // Draw line
+                spectrumCtx.fillRect(0, position, 5, 1);
+                
+                // Label
+                const label = freq >= 1000 ? `${freq/1000}k` : freq;
+                spectrumCtx.fillText(`${label}Hz`, 7, position - 5);
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            setupCanvases();
+            initOperators();
+            updateUIValues();
+            drawWaveform();
+            drawSpectrum();
+            
+            // Add randomize button listener
+            document.getElementById('randomize-btn').addEventListener('click', randomizeOperators);
+            
+            // Add download button listener
+            document.getElementById('download-btn').addEventListener('click', startRecordingForDownload);
+            
+            // Initialize stop recording button
+            document.getElementById('stop-recording-btn').addEventListener('click', stopRecording);
+            
+            // Add custom algorithm button event
+            document.getElementById('apply-custom-algorithm').addEventListener('click', () => {
+                applyCustomAlgorithm();
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', setupCanvases);
+        
+        // Start recording audio for download
+        function startRecordingForDownload() {
+            if (!isPlaying) {
+                alert("Please start playback first before recording.");
+                return;
+            }
+            
+            if (isRecording) {
+                alert("Already recording. Please wait for the current recording to finish.");
+                return;
+            }
+            
+            isRecording = true;
+            recordedChunks = [];
+            
+            // Create a media recorder to capture the audio
+            if (!window.destinationNode) {
+                window.destinationNode = audioContext.createMediaStreamDestination();
+                gainNode.connect(window.destinationNode);
+            }
+            
+            try {
+                // Get supported MIME types
+                const mimeTypes = [
+                    'audio/webm',
+                    'audio/webm;codecs=opus',
+                    'audio/ogg;codecs=opus',
+                    'audio/wav',
+                    'audio/mp4'
+                ];
+                
+                // Find the first supported MIME type
+                let mimeType = '';
+                for (let type of mimeTypes) {
+                    if (MediaRecorder.isTypeSupported(type)) {
+                        mimeType = type;
+                        break;
+                    }
+                }
+                
+                // Create media recorder with options
+                const options = mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {};
+                mediaRecorder = new MediaRecorder(window.destinationNode.stream, options);
+                
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = function() {
+                    // Create a Blob from the recorded chunks
+                    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+                    
+                    // Create a download link
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    
+                    // Get extension from MIME type
+                    let extension = 'webm';
+                    if (mediaRecorder.mimeType.includes('ogg')) {
+                        extension = 'ogg';
+                    } else if (mediaRecorder.mimeType.includes('mp4')) {
+                        extension = 'm4a';
+                    } else if (mediaRecorder.mimeType.includes('wav')) {
+                        extension = 'wav';
+                    }
+                    
+                    // Generate filename with timestamp
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    a.download = `fm-synth-${timestamp}.${extension}`;
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    // Clean up
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+                    
+                    isRecording = false;
+                    
+                    // Hide stop button and restore download button
+                    document.getElementById('stop-recording-btn').style.display = 'none';
+                    const downloadBtn = document.getElementById('download-btn');
+                    downloadBtn.textContent = "Download .wav";
+                    downloadBtn.style.backgroundColor = "#2196F3";
+                    downloadBtn.style.display = 'inline-block';
+                };
+                
+                // Start recording with timeslicing to get chunks throughout recording
+                mediaRecorder.start(1000); // Get data every second
+                
+                // Show visual feedback
+                const downloadBtn = document.getElementById('download-btn');
+                downloadBtn.textContent = "Recording...";
+                downloadBtn.style.backgroundColor = "#f44336";
+                
+                // Show stop recording button
+                const stopRecordingBtn = document.getElementById('stop-recording-btn');
+                stopRecordingBtn.style.display = 'inline-block';
+                stopRecordingBtn.addEventListener('click', stopRecording);
+                
+                // Stop recording after 30 seconds
+                setTimeout(() => {
+                    if (isRecording) {
+                        stopRecording();
+                    }
+                }, 30000);
+                
+                console.log(`Recording started with MIME type: ${mediaRecorder.mimeType}`);
+                
+            } catch (error) {
+                console.error("Error setting up media recorder:", error);
+                alert("Could not record audio. Your browser may not support this feature.");
+                isRecording = false;
+            }
+        }
+        
+        // Stop recording
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+            }
+        }
+        
+        // Update UI values
+        function updateUIValues() {
+            masterVolumeValue.textContent = masterVolumeSlider.value;
+            
+            // Update duration display with infinity symbol for max value
+            currentDuration = parseInt(durationSlider.value);
+            durationValue.textContent = currentDuration === 30 ? '∞' : `${currentDuration}s`;
+            
+            // Update all operators
+            operators.forEach(op => op.updateUI());
+        }
+        
+        // Initialize operators
+        function initOperators() {
+            // Clear operators container
+            operatorsContainer.innerHTML = '';
+            operators = [];
+            
+            // Create initial operators
+            for (let i = 0; i < 4; i++) {
+                operators.push(new Operator(i));
+            }
+            
+            lastOperatorCount = operators.length;
+            lastWaveforms = operators.map(op => op.waveform);
+            updateAlgorithm();
+            lastAlgorithm = currentAlgorithm;
+        }
+        
+        // Event listeners
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                stopSynth();
+                isPlaying = false;
+                playBtn.textContent = 'Play';
+            } else {
+                createFMSynth();
+                isPlaying = true;
+                playBtn.textContent = 'Pause';
+            }
+        });
+        
+        masterVolumeSlider.addEventListener('input', () => {
+            updateUIValues();
+            if (gainNode) {
+                gainNode.gain.setValueAtTime(parseFloat(masterVolumeSlider.value), audioContext.currentTime);
+            }
+        });
+        
+        durationSlider.addEventListener('input', () => {
+            updateUIValues();
+            if (isPlaying) {
+                // Restart synth with new duration settings
+                stopSynth();
+                createFMSynth();
+            }
+        });
+        
+        algorithmSelect.addEventListener('change', () => {
+            lastAlgorithm = currentAlgorithm;
+            
+            // Show/hide custom algorithm editor
+            if (algorithmSelect.value === 'custom') {
+                document.getElementById('custom-algorithm-editor').style.display = 'flex';
+            } else {
+                document.getElementById('custom-algorithm-editor').style.display = 'none';
+                updateAlgorithm();
+                updateSynth();
+            }
+        });
+        
+        addOperatorBtn.addEventListener('click', addOperator);
+        
+        // Presets
+        document.getElementById('preset-1').addEventListener('click', () => {
+            // Simple FM
+            algorithmSelect.value = "0";
+            
+            operators[0].frequency = 440;
+            operators[0].freqRatio = 1;
+            operators[0].level = 0.8;
+            operators[0].waveform = 'sine';
+            
+            operators[1].frequency = 110;
+            operators[1].freqRatio = 0.5;
+            operators[1].level = 0.5;
+            operators[1].waveform = 'sine';
+            
+            operators[2].frequency = 55;
+            operators[2].freqRatio = 1;
+            operators[2].level = 0.3;
+            operators[2].waveform = 'sine';
+            
+            operators[3].frequency = 220;
+            operators[3].freqRatio = 1;
+            operators[3].level = 0.7;
+            operators[3].waveform = 'sine';
+            
+            updateAlgorithm();
+            updateUIValues();
+            updateSynth();
+        });
+        
+        document.getElementById('preset-2').addEventListener('click', () => {
+            // Bell-like
+            algorithmSelect.value = "2";
+            
+            operators[0].frequency = 200;
+            operators[0].freqRatio = 1;
+            operators[0].level = 0.7;
+            operators[0].waveform = 'sine';
+            
+            operators[1].frequency = 400;
+            operators[1].freqRatio = 3.5;
+            operators[1].level = 0.2;
+            operators[1].waveform = 'sine';
+            
+            operators[2].frequency = 280;
+            operators[2].freqRatio = 2;
+            operators[2].level = 0.8;
+            operators[2].waveform = 'sine';
+            
+            operators[3].frequency = 600;
+            operators[3].freqRatio = 6;
+            operators[3].level = 0.3;
+            operators[3].waveform = 'sine';
+            
+            updateAlgorithm();
+            updateUIValues();
+            updateSynth();
+        });
+        
+        document.getElementById('preset-3').addEventListener('click', () => {
+            // Brass-like
+            algorithmSelect.value = "3";
+            
+            operators[0].frequency = 440;
+            operators[0].freqRatio = 1;
+            operators[0].level = 0.5;
+            operators[0].waveform = 'sine';
+            
+            operators[1].frequency = 220;
+            operators[1].freqRatio = 0.5;
+            operators[1].level = 0.7;
+            operators[1].waveform = 'sine';
+            
+            operators[2].frequency = 110;
+            operators[2].freqRatio = 0.25;
+            operators[2].level = 0.9;
+            operators[2].waveform = 'sine';
+            
+            operators[3].frequency = 660;
+            operators[3].freqRatio = 1.5;
+            operators[3].level = 0.6;
+            operators[3].waveform = 'sine';
+            
+            updateAlgorithm();
+            updateUIValues();
+            updateSynth();
+        });
+        
+        document.getElementById('preset-4').addEventListener('click', () => {
+            // Complex
+            algorithmSelect.value = "1";
+            
+            operators[0].frequency = 300;
+            operators[0].freqRatio = 1;
+            operators[0].level = 0.7;
+            operators[0].waveform = 'sawtooth';
+            
+            operators[1].frequency = 450;
+            operators[1].freqRatio = 1.5;
+            operators[1].level = 0.5;
+            operators[1].waveform = 'square';
+            
+            operators[2].frequency = 150;
+            operators[2].freqRatio = 0.5;
+            operators[2].level = 0.6;
+            operators[2].waveform = 'triangle';
+            
+            operators[3].frequency = 600;
+            operators[3].freqRatio = 2;
+            operators[3].level = 0.3;
+            operators[3].waveform = 'sine';
+            
+            updateAlgorithm();
+            updateUIValues();
+            updateSynth();
+        });
+        
+        // Randomize operators
+        function randomizeOperators() {
+            // Generate random algorithm
+            algorithmSelect.value = Math.floor(Math.random() * 4).toString();
+            
+            // For each operator, randomize parameters
+            operators.forEach(op => {
+                // Random frequency between 50 and 800
+                op.frequency = Math.floor(Math.random() * 750) + 50;
+                
+                // Random ratio between 0.2 and 8.0
+                op.freqRatio = Math.round((Math.random() * 7.8 + 0.2) * 10) / 10;
+                
+                // Random level between 0.1 and 1.0
+                op.level = Math.round(Math.random() * 90 + 10) / 100;
+                
+                // Random waveform
+                const waveforms = ['sine', 'square', 'sawtooth', 'triangle'];
+                op.waveform = waveforms[Math.floor(Math.random() * waveforms.length)];
+            });
+            
+            // Update algorithm connections
+            updateAlgorithm();
+            
+            // Update UI
+            updateUIValues();
+            
+            // Update synth if playing
+            updateSynth();
+        }
+    </script>
+</body>
+</html>
