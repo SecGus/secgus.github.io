@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPM Counter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #111;
+            color: #f5f5f5;
+            padding: 20px;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+        }
+        .pulse-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .pulse-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(108, 92, 231, 0.3);
+            transform: translate(-50%, -50%) scale(0);
+            animation: pulse 0.6s ease-out forwards;
+        }
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+        h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        #instructions {
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 300;
+            color: #aaa;
+            max-width: 80%;
+        }
+        #bpmDisplay {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 20px 0;
+            color: #6c5ce7;
+            text-shadow: 0 0 10px rgba(108, 92, 231, 0.5);
+            transition: all 0.3s ease;
+        }
+        #tapCount {
+            margin: 15px 0;
+            font-size: 1.1rem;
+            color: #aaa;
+            font-weight: 300;
+        }
+        button {
+            padding: 12px 25px;
+            margin: 15px;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(145deg, #ff7675, #d63031);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(214, 48, 49, 0.3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            z-index: 200;
+            position: relative;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(214, 48, 49, 0.4);
+        }
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(214, 48, 49, 0.4);
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+            width: 500px;
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="pulse-overlay" id="pulseOverlay"></div>
+    <div class="container">
+        <h1>BPM Counter</h1>
+        <div id="instructions">Tap anywhere on the screen on each beat of the music</div>
+        <div id="bpmDisplay">0 BPM</div>
+        <div id="tapCount">Taps: 0</div>
+        <button id="resetButton">Reset</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const bpmDisplay = document.getElementById('bpmDisplay');
+            const tapCount = document.getElementById('tapCount');
+            const resetButton = document.getElementById('resetButton');
+            const pulseOverlay = document.getElementById('pulseOverlay');
+            
+            let taps = [];
+            let tapCounter = 0;
+            
+            function calculateBPM() {
+                if (taps.length < 2) return 0;
+                
+                // Calculate time differences between taps
+                const intervals = [];
+                for (let i = 1; i < taps.length; i++) {
+                    intervals.push(taps[i] - taps[i-1]);
+                }
+                
+                // Calculate average interval
+                const sum = intervals.reduce((a, b) => a + b, 0);
+                const avgInterval = sum / intervals.length;
+                
+                // Convert to BPM (beats per minute)
+                // BPM = (1 minute / average interval in seconds)
+                const bpm = 60000 / avgInterval;
+                
+                return Math.round(bpm);
+            }
+            
+            function updateDisplay() {
+                const bpm = calculateBPM();
+                bpmDisplay.textContent = `${bpm} BPM`;
+                tapCount.textContent = `Taps: ${tapCounter}`;
+            }
+            
+            function resetCounter() {
+                taps = [];
+                tapCounter = 0;
+                bpmDisplay.textContent = '0 BPM';
+                tapCount.textContent = 'Taps: 0';
+            }
+            
+            function createPulseEffect(x, y) {
+                const pulseCircle = document.createElement('div');
+                pulseCircle.classList.add('pulse-circle');
+                pulseCircle.style.width = '200px';
+                pulseCircle.style.height = '200px';
+                pulseCircle.style.left = `${x}px`;
+                pulseCircle.style.top = `${y}px`;
+                
+                pulseOverlay.appendChild(pulseCircle);
+                
+                // Remove the element after animation completes
+                setTimeout(() => {
+                    pulseCircle.remove();
+                }, 600);
+            }
+            
+            function registerTap(x, y) {
+                const now = Date.now();
+                taps.push(now);
+                
+                // Keep only the last 10 taps for a more accurate recent BPM
+                if (taps.length > 10) {
+                    taps.shift();
+                }
+                
+                tapCounter++;
+                updateDisplay();
+                createPulseEffect(x, y);
+            }
+            
+            // Allow clicking anywhere on the body to register a tap
+            document.body.addEventListener('click', function(event) {
+                // Don't register a tap if clicking on the reset button
+                if (event.target === resetButton || resetButton.contains(event.target)) {
+                    return;
+                }
+                
+                registerTap(event.clientX, event.clientY);
+            });
+            
+            // Also allow spacebar to tap
+            document.addEventListener('keydown', function(event) {
+                if (event.code === 'Space') {
+                    // Get center of viewport for the pulse effect
+                    const x = window.innerWidth / 2;
+                    const y = window.innerHeight / 2;
+                    
+                    registerTap(x, y);
+                }
+            });
+            
+            resetButton.addEventListener('click', resetCounter);
+        });
+    </script>
+</body>
+</html>
