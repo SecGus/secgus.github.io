@@ -568,6 +568,37 @@
             .mode-label {
                 font-size: 14px;
             }
+            
+            .mobile-collapsible-header {
+                display: flex;
+                position: relative;
+                z-index: 5;
+            }
+            
+            .mobile-collapsible-content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+                padding: 0 5px;
+                position: relative;
+                z-index: 4;
+            }
+            
+            .mobile-collapsible-content.expanded {
+                max-height: 2000px; /* Large enough to fit all content */
+                padding-bottom: 15px;
+                overflow-y: auto; /* Allow scrolling within the expanded content */
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            }
+            
+            .legend-title {
+                display: none; /* Hide redundant title in mobile view */
+            }
+            
+            /* Prevent iOS touch issues */
+            .wheel-section {
+                -webkit-overflow-scrolling: touch;
+            }
         }
         
         /* Landscape orientation on mobile */
@@ -1293,42 +1324,89 @@
             const resultsHeader = document.getElementById('results-header');
             const resultsContent = resultsHeader.nextElementSibling;
             
-            resultsHeader.addEventListener('click', function() {
-                this.classList.toggle('active');
-                resultsContent.classList.toggle('expanded');
+            // Use data attribute to track state more reliably
+            resultsHeader.setAttribute('data-expanded', 'false');
+            
+            resultsHeader.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent any default behavior
+                
+                // Toggle the expanded state based on data attribute
+                const isExpanded = this.getAttribute('data-expanded') === 'true';
+                this.setAttribute('data-expanded', !isExpanded);
+                
+                // Apply classes based on the new state
+                if (!isExpanded) {
+                    this.classList.add('active');
+                    resultsContent.classList.add('expanded');
+                } else {
+                    this.classList.remove('active');
+                    resultsContent.classList.remove('expanded');
+                }
             });
             
             // Setup for legend section
             const legendHeader = document.getElementById('legend-header');
             const legendContent = legendHeader.nextElementSibling;
             
-            legendHeader.addEventListener('click', function() {
-                this.classList.toggle('active');
-                legendContent.classList.toggle('expanded');
+            // Use data attribute to track state more reliably
+            legendHeader.setAttribute('data-expanded', 'false');
+            
+            legendHeader.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent any default behavior
+                
+                // Toggle the expanded state based on data attribute
+                const isExpanded = this.getAttribute('data-expanded') === 'true';
+                this.setAttribute('data-expanded', !isExpanded);
+                
+                // Apply classes based on the new state
+                if (!isExpanded) {
+                    this.classList.add('active');
+                    legendContent.classList.add('expanded');
+                } else {
+                    this.classList.remove('active');
+                    legendContent.classList.remove('expanded');
+                }
             });
             
             // Expand sections by default on desktop, collapse on mobile
             function updateCollapsibleState() {
                 if (window.innerWidth <= 767) {
-                    // Mobile: collapse by default
-                    resultsContent.classList.remove('expanded');
-                    resultsHeader.classList.remove('active');
-                    legendContent.classList.remove('expanded');
-                    legendHeader.classList.remove('active');
+                    // Mobile: collapse by default unless already expanded by user
+                    if (resultsHeader.getAttribute('data-expanded') !== 'true') {
+                        resultsContent.classList.remove('expanded');
+                        resultsHeader.classList.remove('active');
+                    }
+                    
+                    if (legendHeader.getAttribute('data-expanded') !== 'true') {
+                        legendContent.classList.remove('expanded');
+                        legendHeader.classList.remove('active');
+                    }
                 } else {
                     // Desktop: expand by default
                     resultsContent.classList.add('expanded');
                     resultsHeader.classList.add('active');
+                    resultsHeader.setAttribute('data-expanded', 'true');
+                    
                     legendContent.classList.add('expanded');
                     legendHeader.classList.add('active');
+                    legendHeader.setAttribute('data-expanded', 'true');
                 }
             }
             
             // Initial state
             updateCollapsibleState();
             
-            // Update on resize
+            // Update on resize, not on scroll
             window.addEventListener('resize', updateCollapsibleState);
+            
+            // Prevent touchmove events from closing the dropdowns accidentally
+            resultsContent.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+            });
+            
+            legendContent.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+            });
         }
         
         // Toggle between detailed and simple modes
@@ -1347,6 +1425,7 @@
                 const collapsibleHeaders = document.querySelectorAll('.mobile-collapsible-header');
                 collapsibleHeaders.forEach(header => {
                     header.classList.remove('active');
+                    header.setAttribute('data-expanded', 'false');
                 });
             } else {
                 container.classList.remove('simple-mode');
@@ -1361,6 +1440,7 @@
                     const collapsibleHeaders = document.querySelectorAll('.mobile-collapsible-header');
                     collapsibleHeaders.forEach(header => {
                         header.classList.remove('active');
+                        header.setAttribute('data-expanded', 'false');
                     });
                 } else {
                     // In detailed mode on desktop, expand all sections
@@ -1372,6 +1452,7 @@
                     const collapsibleHeaders = document.querySelectorAll('.mobile-collapsible-header');
                     collapsibleHeaders.forEach(header => {
                         header.classList.add('active');
+                        header.setAttribute('data-expanded', 'true');
                     });
                 }
             }
