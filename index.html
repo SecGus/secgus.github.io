@@ -664,6 +664,81 @@
                 margin-left: 20px;
             }
         }
+        
+        /* Mobile collapsible sections */
+        .collapsible-header {
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        
+        .collapsible-content {
+            display: block;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .collapsible-header:after {
+            content: '+';
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .collapsible-header.active:after {
+            content: '-';
+        }
+        
+        /* Only show collapsible headers on mobile */
+        .mobile-collapsible-header {
+            display: none;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-collapsible-header:after {
+            content: '+';
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .mobile-collapsible-header.active:after {
+            content: '-';
+        }
+        
+        @media (max-width: 767px) {
+            .mobile-collapsible-header {
+                display: flex;
+            }
+            
+            .mobile-collapsible-content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+                padding: 0 5px;
+            }
+            
+            .mobile-collapsible-content.expanded {
+                max-height: 2000px; /* Large enough to fit all content */
+                padding-bottom: 15px;
+            }
+            
+            .legend-title {
+                display: none; /* Hide redundant title in mobile view */
+            }
+        }
     </style>
 </head>
 <body>
@@ -690,7 +765,8 @@
         <div class="wheel-section">
             <!-- Results on the left (tables side by side) -->
             <div class="results-section">
-                <div class="results">
+                <div class="mobile-collapsible-header" id="results-header">Compatibility Tables</div>
+                <div class="results mobile-collapsible-content">
                     <div class="result-box">
                         <h3>Keys that can go TO this key</h3>
                         <ul class="result-list" id="incoming-keys"></ul>
@@ -707,46 +783,49 @@
             
             <!-- Legend on the right -->
             <div class="legend-container">
-                <div class="legend-title">Mixing Guide</div>
-                <div class="legend-item">
-                    <div class="legend-icon perfect-match">=</div>
-                    <div class="legend-text"><strong>Same Key:</strong> Perfect harmonic match, tracks "sing together" (e.g., 4A → 4A)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon energy-boost">+1</div>
-                    <div class="legend-text"><strong>Up a Fifth (+1):</strong> Energy boost with near-perfect compatibility (e.g., 4A → 5A)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon energy-drop">-1</div>
-                    <div class="legend-text"><strong>Down a Fifth (-1):</strong> Takes crowd deeper, creates goosebumps (e.g., 4A → 3A)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon" style="background-color: #77dd77;">+2</div>
-                    <div class="legend-text"><strong>Up a Whole Step (+2):</strong> Major energy boost, "hands in the air" mixing (e.g., 4A → 6A)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon" style="background-color: #b19cd9;">-3</div>
-                    <div class="legend-text"><strong>Up a Minor Third (-3):</strong> Raises energy despite 3 different notes (e.g., 4A → 1A)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon relative-switch">R</div>
-                    <div class="legend-text"><strong>Relative Switch:</strong> Dramatic energy change with same notes (e.g., 4A → 4B)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon dominant-switch">+7</div>
-                    <div class="legend-text"><strong>Half Step Modulation (+7):</strong> Dramatic energy boost with percussive mixing (e.g., 4A → 11A)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon" style="background-color: #e79eff;">+3R</div>
-                    <div class="legend-text"><strong>Same Root Note (+3 & letter):</strong> Brightens/darkens mood with same root (e.g., 4A → 7B)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon" style="background-color: #87cefa;">+1R</div>
-                    <div class="legend-text"><strong>Dominant Relative (+1 & letter):</strong> Great major/minor transition (e.g., 4A → 5B)</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon" style="background-color: #98d8c6;">-1R</div>
-                    <div class="legend-text"><strong>Subdominant Relative (-1 & letter):</strong> Smooth major/minor transition (e.g., 4B → 3A)</div>
+                <div class="mobile-collapsible-header" id="legend-header">Mixing Guide</div>
+                <div class="mobile-collapsible-content">
+                    <div class="legend-title">Mixing Guide</div>
+                    <div class="legend-item">
+                        <div class="legend-icon perfect-match">=</div>
+                        <div class="legend-text"><strong>Same Key:</strong> Perfect harmonic match, tracks "sing together" (e.g., 4A → 4A)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon energy-boost">+1</div>
+                        <div class="legend-text"><strong>Up a Fifth (+1):</strong> Energy boost with near-perfect compatibility (e.g., 4A → 5A)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon energy-drop">-1</div>
+                        <div class="legend-text"><strong>Down a Fifth (-1):</strong> Takes crowd deeper, creates goosebumps (e.g., 4A → 3A)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon" style="background-color: #77dd77;">+2</div>
+                        <div class="legend-text"><strong>Up a Whole Step (+2):</strong> Major energy boost, "hands in the air" mixing (e.g., 4A → 6A)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon" style="background-color: #b19cd9;">-3</div>
+                        <div class="legend-text"><strong>Up a Minor Third (-3):</strong> Raises energy despite 3 different notes (e.g., 4A → 1A)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon relative-switch">R</div>
+                        <div class="legend-text"><strong>Relative Switch:</strong> Dramatic energy change with same notes (e.g., 4A → 4B)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon dominant-switch">+7</div>
+                        <div class="legend-text"><strong>Half Step Modulation (+7):</strong> Dramatic energy boost with percussive mixing (e.g., 4A → 11A)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon" style="background-color: #e79eff;">+3R</div>
+                        <div class="legend-text"><strong>Same Root Note (+3 & letter):</strong> Brightens/darkens mood with same root (e.g., 4A → 7B)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon" style="background-color: #87cefa;">+1R</div>
+                        <div class="legend-text"><strong>Dominant Relative (+1 & letter):</strong> Great major/minor transition (e.g., 4A → 5B)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon" style="background-color: #98d8c6;">-1R</div>
+                        <div class="legend-text"><strong>Subdominant Relative (-1 & letter):</strong> Smooth major/minor transition (e.g., 4B → 3A)</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1203,7 +1282,54 @@
             document.getElementById('mode-toggle').addEventListener('change', function() {
                 toggleMode(this.checked);
             });
+            
+            // Set up collapsible sections for mobile
+            setupCollapsibleSections();
         };
+        
+        // Setup collapsible sections for mobile view
+        function setupCollapsibleSections() {
+            // Setup for results section
+            const resultsHeader = document.getElementById('results-header');
+            const resultsContent = resultsHeader.nextElementSibling;
+            
+            resultsHeader.addEventListener('click', function() {
+                this.classList.toggle('active');
+                resultsContent.classList.toggle('expanded');
+            });
+            
+            // Setup for legend section
+            const legendHeader = document.getElementById('legend-header');
+            const legendContent = legendHeader.nextElementSibling;
+            
+            legendHeader.addEventListener('click', function() {
+                this.classList.toggle('active');
+                legendContent.classList.toggle('expanded');
+            });
+            
+            // Expand sections by default on desktop, collapse on mobile
+            function updateCollapsibleState() {
+                if (window.innerWidth <= 767) {
+                    // Mobile: collapse by default
+                    resultsContent.classList.remove('expanded');
+                    resultsHeader.classList.remove('active');
+                    legendContent.classList.remove('expanded');
+                    legendHeader.classList.remove('active');
+                } else {
+                    // Desktop: expand by default
+                    resultsContent.classList.add('expanded');
+                    resultsHeader.classList.add('active');
+                    legendContent.classList.add('expanded');
+                    legendHeader.classList.add('active');
+                }
+            }
+            
+            // Initial state
+            updateCollapsibleState();
+            
+            // Update on resize
+            window.addEventListener('resize', updateCollapsibleState);
+        }
         
         // Toggle between detailed and simple modes
         function toggleMode(isSimpleMode) {
@@ -1211,11 +1337,44 @@
             
             if (isSimpleMode) {
                 container.classList.add('simple-mode');
+                
+                // In simple mode, hide all collapsible sections
+                const collapsibleContents = document.querySelectorAll('.mobile-collapsible-content');
+                collapsibleContents.forEach(content => {
+                    content.classList.remove('expanded');
+                });
+                
+                const collapsibleHeaders = document.querySelectorAll('.mobile-collapsible-header');
+                collapsibleHeaders.forEach(header => {
+                    header.classList.remove('active');
+                });
             } else {
                 container.classList.remove('simple-mode');
+                
+                // In detailed mode on mobile, keep sections collapsed by default
+                if (window.innerWidth <= 767) {
+                    const collapsibleContents = document.querySelectorAll('.mobile-collapsible-content');
+                    collapsibleContents.forEach(content => {
+                        content.classList.remove('expanded');
+                    });
+                    
+                    const collapsibleHeaders = document.querySelectorAll('.mobile-collapsible-header');
+                    collapsibleHeaders.forEach(header => {
+                        header.classList.remove('active');
+                    });
+                } else {
+                    // In detailed mode on desktop, expand all sections
+                    const collapsibleContents = document.querySelectorAll('.mobile-collapsible-content');
+                    collapsibleContents.forEach(content => {
+                        content.classList.add('expanded');
+                    });
+                    
+                    const collapsibleHeaders = document.querySelectorAll('.mobile-collapsible-header');
+                    collapsibleHeaders.forEach(header => {
+                        header.classList.add('active');
+                    });
+                }
             }
-            
-            // No need to re-select the key since highlighting is now applied in both modes
         }
 
         // Select a key
