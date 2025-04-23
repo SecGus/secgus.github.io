@@ -53,7 +53,16 @@
         
         a:hover {
             text-shadow: 0 0 10px #0f0;
-            letter-spacing: 1px;
+            animation: link-flicker 1s infinite;
+        }
+        
+        @keyframes link-flicker {
+            0% { opacity: 1; }
+            25% { opacity: 0.5; }
+            50% { opacity: 1; }
+            60% { opacity: 0.7; }
+            75% { opacity: 1; }
+            100% { opacity: 1; }
         }
         
         .about {
@@ -125,22 +134,26 @@
     <div class="container">
         <h1 class="typing-effect">sotano del chivato</h1>
         
-        <div class="projects">
-            <h2>Projects List</h2>
-            <div id="projects-container">
-                <!-- Projects will be loaded here -->
-            </div>
-        </div>
-        
         <div class="about">
             <h2>About Me</h2>
             <div id="about-content">
                 <!-- Replace this with your about me content -->
                 <p>Hacker living in Lisbon funelling fidgeting into breaking & building.</p>
                 <p>Contact me at:</p>
-                <p>TG: @chivato</p>
-                <p>IG: @chyv</p>
+                <p>TG: <a href="https://t.me/chivato"></a>@chivato</a></p>
+                <p>IG: <a href="https://www.instagram.com/chyv">@chyv</a></p>
+                <p>Twitter: <a href="https://x.com/SecGus">@SecGus</a></p>
+            </div>
+        </div>
+        
+        <div class="projects">
+            <h2>Projects List</h2>
                 <p>Twitter: @SecGus</p>
+            </div>
+        <div class="projects">
+            <h2>Projects List</h2>
+            <div id="projects-container">
+                <!-- Projects will be loaded here -->
             </div>
         </div>
     </div>
