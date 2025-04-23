@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google Tag Manager -->
+      <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-T3VQ6KZS');</script>
-
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-C9F86ZY9VV"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-C9F86ZY9VV');
-</script>
-<!-- End Google Tag Manager -->
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-T3VQ6KZS');</script>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C9F86ZY9VV"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-C9F86ZY9VV');
+    </script>
+    <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Interactive Camelot Wheel</title>
     <style>
         body {
@@ -34,6 +37,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            font-size: 24px;
         }
         
         .container {
@@ -52,18 +56,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             margin-bottom: 30px;
             align-items: flex-start;
             justify-content: space-between;
+            flex-wrap: nowrap;
         }
         
         .results-section {
             width: 620px;
             align-self: flex-start;
             margin-right: 20px;
+            order: 1;
         }
         
         .wheel-container {
             position: relative;
             width: 600px;
             height: 600px;
+            order: 2;
         }
         
         .wheel-svg {
@@ -237,6 +244,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             padding: 15px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             margin-left: 20px;
+            order: 3;
         }
         
         .legend-title {
@@ -289,11 +297,396 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         .dominant-switch {
             background-color: #ff6961;
         }
+        
+        /* Add toggle switch styles */
+        .mode-toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .mode-label {
+            margin: 0 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        /* The switch - the box around the slider */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        /* Hide default HTML checkbox */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* The slider */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+        
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+        
+        .slider.round:before {
+            border-radius: 50%;
+        }
+        
+        /* Highlight for compatible segments */
+        .segment.compatible {
+            stroke: #888;  /* Use the default light grey stroke instead of black */
+            stroke-width: 1;  /* Use the default stroke width */
+        }
+        
+        /* Keep the existing colors for compatible segments */
+        .segment.compatible.major {
+            fill: #ffb6b9; /* Light red for major keys (A) */
+        }
+        
+        .segment.compatible.minor {
+            fill: #bbffbb; /* Light green for minor keys (B) */
+        }
+        
+        /* Keep strong outline only for selected segments */
+        .segment.selected {
+            stroke: #000;
+            stroke-width: 3;
+            opacity: 1;
+        }
+        
+        .simple-mode .legend-container,
+        .simple-mode .result-description {
+            display: none;
+        }
+        
+        .simple-mode .result-box {
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        /* Additional styles for simple mode */
+        .simple-mode .result-box h3 {
+            font-size: 14px;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .simple-mode .result-list li {
+            padding: 5px;
+            margin: 3px 0;
+        }
+        
+        .simple-mode .wheel-container {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Simple mode instruction text */
+        .mode-instructions {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+            color: #555;
+            transition: opacity 0.3s;
+        }
+        
+        .simple-mode .simple-instructions {
+            display: block;
+        }
+        
+        .simple-mode .detailed-instructions {
+            display: none;
+        }
+        
+        .detailed-instructions {
+            display: block;
+        }
+        
+        .simple-instructions {
+            display: none;
+        }
+        
+        .simple-mode .results-section,
+        .simple-mode .legend-container,
+        .simple-mode .result-description {
+            display: none;
+        }
+        
+        .simple-mode .wheel-section {
+            justify-content: center;
+        }
+        
+        .simple-mode .wheel-container {
+            margin: 0 auto;
+        }
+        
+        /* Mobile styles */
+        @media (max-width: 767px) {
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+            
+            .wheel-section {
+                flex-direction: column;
+                align-items: center;
+                flex-wrap: wrap; /* Allow wrapping in mobile view */
+            }
+            
+            .results-section {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 20px;
+                order: 2; /* Results below wheel on mobile */
+            }
+            
+            .wheel-container {
+                width: 100%;
+                max-width: 320px;
+                height: auto;
+                aspect-ratio: 1/1;
+                order: 1; /* Wheel on top on mobile */
+                margin-bottom: 20px;
+            }
+            
+            .legend-container {
+                width: 100% !important;
+                margin-left: 0 !important;
+                order: 3; /* Legend at bottom on mobile */
+                margin-top: 20px;
+            }
+            
+            .results {
+                flex-direction: column !important;
+            }
+            
+            .result-box {
+                margin-bottom: 15px;
+                padding: 12px;
+                font-size: 12px;
+            }
+            
+            .result-box h3 {
+                font-size: 14px;
+                padding-bottom: 8px;
+            }
+            
+            .result-key {
+                font-size: 12px !important;
+            }
+            
+            .result-description {
+                font-size: 10px !important;
+            }
+            
+            .legend-item {
+                margin-bottom: 8px;
+            }
+            
+            .legend-text {
+                font-size: 12px !important;
+            }
+            
+            .position-text {
+                font-size: 12px;
+            }
+            
+            .name-text {
+                font-size: 8px;
+            }
+            
+            .mode-toggle-container {
+                margin-bottom: 10px;
+            }
+            
+            .mode-instructions {
+                font-size: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .switch {
+                width: 50px;
+                height: 28px;
+            }
+            
+            .slider:before {
+                height: 20px;
+                width: 20px;
+                left: 4px;
+                bottom: 4px;
+            }
+            
+            input:checked + .slider:before {
+                transform: translateX(22px);
+            }
+            
+            .mode-label {
+                font-size: 14px;
+            }
+        }
+        
+        /* Landscape orientation on mobile */
+        @media (max-width: 767px) and (orientation: landscape) {
+            .wheel-section {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .wheel-container {
+                width: 60vh;
+                height: 60vh;
+                max-width: 300px;
+                max-height: 300px;
+                margin: 0 10px;
+                order: 1;
+            }
+            
+            .results-section {
+                width: calc(100% - 320px);
+                min-width: 280px;
+                order: 2;
+            }
+            
+            .legend-container {
+                width: 100%;
+                margin-top: 15px;
+                order: 3;
+                margin-left: 0 !important;
+            }
+            
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                padding: 0;
+            }
+            
+            h1 {
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* Tablet styles */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .wheel-container {
+                width: 450px;
+                height: 450px;
+                order: 1; /* Wheel first on tablet */
+            }
+            
+            .wheel-section {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .results-section {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 20px;
+                order: 2; /* Results below wheel on tablet */
+            }
+            
+            .legend-container {
+                width: 80%;
+                margin-left: 0 !important;
+                margin-top: 20px;
+                order: 3; /* Legend at bottom on tablet */
+            }
+        }
+        
+        /* Large desktop styles */
+        @media (min-width: 1024px) {
+            .wheel-section {
+                flex-direction: row;
+                flex-wrap: nowrap;
+                justify-content: space-between;
+            }
+            
+            .results-section {
+                order: 1;
+                width: 620px;
+            }
+            
+            .wheel-container {
+                order: 2;
+            }
+            
+            .legend-container {
+                order: 3;
+                margin-left: 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <h1>Interactive Camelot Wheel</h1>
     <div class="container">
+        <!-- Add toggle switch here -->
+        <div class="mode-toggle-container">
+            <span class="mode-label">Detailed</span>
+            <label class="switch">
+                <input type="checkbox" id="mode-toggle">
+                <span class="slider round"></span>
+            </label>
+            <span class="mode-label">Simple</span>
+        </div>
+        
+        <!-- Mode instructions -->
+        <div class="mode-instructions detailed-instructions">
+            Detailed mode shows complete mixing guide and detailed relationship descriptions. Compatible keys are highlighted: light red for major keys, light green for minor keys.
+        </div>
+        <div class="mode-instructions simple-instructions">
+           Simple mode, pick a key and see what keys it can go to.
+        </div>
+        
         <div class="wheel-section">
             <!-- Results on the left (tables side by side) -->
             <div class="results-section">
@@ -398,6 +791,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             svg.setAttribute("class", "wheel-svg");
             svg.setAttribute("viewBox", "0 0 600 600");
             svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+            svg.setAttribute("width", "100%");
+            svg.setAttribute("height", "100%");
             
             wheelContainer.appendChild(svg);
             
@@ -493,8 +888,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             segment.setAttribute("class", `segment ${key.type}`);
             segment.setAttribute("data-position", key.position);
             
-            // Add event listener
+            // Add event listeners for both mouse and touch
             segment.addEventListener('click', () => selectKey(key));
+            segment.addEventListener('touchend', (e) => {
+                e.preventDefault(); // Prevent default touch behavior (like scrolling)
+                selectKey(key);
+            });
             
             group.appendChild(segment);
             
@@ -794,6 +1193,31 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             });
         }
 
+        // Initialize the wheel
+        window.onload = function() {
+            createWheel();
+            // Select 8A (C Major) by default
+            selectKey(camelotWheel.find(k => k.position === "8A"));
+            
+            // Add event listener for mode toggle
+            document.getElementById('mode-toggle').addEventListener('change', function() {
+                toggleMode(this.checked);
+            });
+        };
+        
+        // Toggle between detailed and simple modes
+        function toggleMode(isSimpleMode) {
+            const container = document.querySelector('.container');
+            
+            if (isSimpleMode) {
+                container.classList.add('simple-mode');
+            } else {
+                container.classList.remove('simple-mode');
+            }
+            
+            // No need to re-select the key since highlighting is now applied in both modes
+        }
+
         // Select a key
         function selectKey(key) {
             // Clear previous selection
@@ -801,20 +1225,63 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 el.classList.remove('selected');
             });
             
-            // Add selected class to current key
-            document.querySelector(`.segment[data-position="${key.position}"]`).classList.add('selected');
+            // Reset all segments to their original colors
+            document.querySelectorAll('.segment').forEach(el => {
+                if (el.classList.contains('compatible')) {
+                    el.classList.remove('compatible');
+                }
+                
+                // Reset to original colors based on type
+                if (el.classList.contains('major')) {
+                    el.setAttribute('fill', '#fb8072');
+                } else if (el.classList.contains('minor')) {
+                    el.setAttribute('fill', '#8dd3c7');
+                }
+            });
             
-            // Get and display compatible keys
+            // Get compatible keys
             const compatibleKeys = getCompatibleKeys(key);
+            
+            // Highlight compatible keys on the wheel in both simple and detailed modes
+            highlightCompatibleKeys(compatibleKeys.outgoing);
+            
+            // Add selected class to current key and set its color AFTER highlighting others
+            // This ensures it won't be overwritten
+            const selectedSegment = document.querySelector(`.segment[data-position="${key.position}"]`);
+            selectedSegment.classList.add('selected');
+            
+            // Apply compatible highlight color to the selected key
+            if (selectedSegment.classList.contains('major')) {
+                selectedSegment.setAttribute('fill', '#ffb6b9');  // Light red for major keys
+            } else if (selectedSegment.classList.contains('minor')) {
+                selectedSegment.setAttribute('fill', '#bbffbb');  // Light green for minor keys
+            }
+            
+            // Display results
             displayResults(compatibleKeys.incoming, compatibleKeys.outgoing);
         }
-
-        // Initialize the wheel
-        window.onload = function() {
-            createWheel();
-            // Select 8A (C Major) by default
-            selectKey(camelotWheel.find(k => k.position === "8A"));
-        };
+        
+        // Highlight compatible keys on the wheel in both simple and detailed modes
+        function highlightCompatibleKeys(outgoingKeys) {
+            outgoingKeys.forEach(relationship => {
+                // Skip highlighting the selected key itself and limit to the most useful compatibility relationships
+                const keyPosition = relationship.key.position;
+                const keyElement = document.querySelector(`.segment[data-position="${keyPosition}"]`);
+                
+                if (!keyElement.classList.contains('selected')) {
+                    // In simple mode, we highlight only certain key relationships
+                    // This creates a cleaner visual that focuses on the most musical transitions
+                    keyElement.classList.add('compatible');
+                    
+                    // Apply fill color directly based on key type
+                    if (keyElement.classList.contains('major')) {
+                        keyElement.setAttribute('fill', '#ffb6b9'); // Light red for major keys
+                    } else if (keyElement.classList.contains('minor')) {
+                        keyElement.setAttribute('fill', '#bbffbb'); // Light green for minor keys
+                    }
+                }
+            });
+        }
     </script>
     
 <!-- Google Tag Manager (noscript) -->
