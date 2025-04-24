@@ -128,6 +128,104 @@
             50% { transform: translateY(-20px); }
             100% { transform: translateY(0px); }
         }
+        
+        .soundcloud-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px #0f0;
+            animation: flicker 4s infinite;
+            transition: all 0.3s;
+        }
+        
+        .soundcloud-badge:hover {
+            box-shadow: 0 0 20px #0f0;
+            transform: scale(1.05);
+        }
+        
+        .soundcloud-badge img {
+            margin-right: 10px;
+            height: 24px;
+        }
+        
+        /* Socials dropdown styles */
+        .socials-container {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px #0f0;
+            border-radius: 4px;
+            animation: flicker 3s infinite;
+        }
+        
+        .socials-container a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f0;
+            transition: all 0.3s;
+        }
+        
+        .socials-container a:hover {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 5px #0f0);
+        }
+        
+        .socials-container img {
+            height: 24px;
+            width: 24px;
+        }
+
+        .socials-btn {
+            display: none;
+        }
+        
+        .socials-content {
+            display: none;
+        }
+        
+        .show {
+            display: block;
+        }
+        
+        @keyframes glitch-in {
+            0% {
+                clip-path: inset(100% 0 0 0);
+                transform: translateY(-10px);
+            }
+            20% {
+                clip-path: inset(45% 0 54% 0);
+                transform: translateY(-5px);
+            }
+            40% {
+                clip-path: inset(23% 0 76% 0);
+                transform: translateY(-2px);
+            }
+            60% {
+                clip-path: inset(67% 0 33% 0);
+                transform: translateY(-1px);
+            }
+            80% {
+                clip-path: inset(14% 0 85% 0);
+                transform: translateY(-0.5px);
+            }
+            100% {
+                clip-path: inset(0 0 0 0);
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -137,12 +235,9 @@
         <div class="about">
             <h2>About Me</h2>
             <div id="about-content">
-                <!-- Replace this with your about me content -->
+                <!-- About content without direct social links -->
                 <p>Hacker living in Lisbon funelling fidgeting into breaking & building.</p>
-                <p>Contact me at:</p>
-                <p>TG: <a href="https://t.me/chivato"></a>@chivato</a></p>
-                <p>IG: <a href="https://www.instagram.com/chyv">@chyv</a></p>
-                <p>Twitter: <a href="https://x.com/SecGus">@SecGus</a></p>
+                <p>Check out my socials using the dropdown menu in the top right.</p>
             </div>
         </div>
         <div class="projects">
@@ -151,6 +246,22 @@
                 <!-- Projects will be loaded here -->
             </div>
         </div>
+    </div>
+    
+    <!-- Socials links -->
+    <div class="socials-container">
+        <a href="https://t.me/chivato" target="_blank" title="Telegram">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmZjAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIyLjA1IDIuMjNMMi4wMSA5Ljk0Yy0xLjM4LjU0LTEuMzYgMS4yNy0uMjUgMS42MWw1LjE4IDEuNjEgMS4zNCA4LjJjLjE2Ljk1LjkuOTUgMS4zMy40N2wzLjAxLTIuNzggNS4yIDMuODNjMS4wMi41NiAxLjc0LjI2IDItLjk1bDMuNjItMTcuMWMuMzYtMS41LS45Ny0yLjE4LTEuOTQtMS43M1oiPjwvcGF0aD48L3N2Zz4=" alt="Telegram">
+        </a>
+        <a href="https://www.instagram.com/chyv" target="_blank" title="Instagram">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmZjAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iNSIgcnk9IjUiPjwvcmVjdD48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0Ij48L2NpcmNsZT48Y2lyY2xlIGN4PSIxNy41IiBjeT0iNi41IiByPSIxLjUiPjwvY2lyY2xlPjwvc3ZnPg==" alt="Instagram">
+        </a>
+        <a href="https://x.com/SecGus" target="_blank" title="Twitter">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMGZmMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48bGluZSB4MT0iNiIgeTE9IjYiIHgyPSIxOCIgeTI9IjE4Ij48L2xpbmU+PGxpbmUgeDE9IjE4IiB5MT0iNiIgeDI9IjYiIHkyPSIxOCI+PC9saW5lPjwvc3ZnPg==" alt="Twitter">
+        </a>
+        <a href="https://soundcloud.com/putochivato" target="_blank" title="SoundCloud">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMGZmMDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNCAxNWg0djJINHYtMnptLTIsNGg4djJIMnYtMnptMTIsLThoLTJ2MTBoMnYtMTB6bTQsOGgtMnYyaDJ2LTJ6bS0zLC0xMmgtMnYxNGgyVjd6bTcsNWgtMnY5aDJ2LTlaIj48L3BhdGg+PC9zdmc+" alt="SoundCloud">
+        </a>
     </div>
     
     <script>
@@ -206,6 +317,24 @@
             } catch (error) {
                 console.error('Error loading projects:', error);
                 document.getElementById('projects-container').innerHTML = '<p>Error loading projects. Please check your projects.json file.</p>';
+            }
+        }
+        
+        // Toggle socials dropdown
+        function toggleSocials() {
+            document.getElementById("socialsDropdown").classList.toggle("show");
+        }
+        
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.socials-btn')) {
+                const dropdowns = document.getElementsByClassName("socials-content");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
             }
         }
         
