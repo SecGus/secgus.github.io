@@ -250,12 +250,44 @@
                 text-shadow: none;
             }
         }
+        
+        .title-mobile {
+            display: none;
+        }
+        
+        /* Media query for mobile devices */
+        @media screen and (max-width: 768px) {
+            .title-desktop {
+                display: none;
+            }
+            
+            .title-mobile {
+                display: block;
+            }
+            
+            .title-container {
+                top: 20px;
+                left: 20px;
+            }
+            
+            .socials-container {
+                top: 20px;
+                right: 20px;
+                gap: 10px;
+            }
+            
+            .socials-container img {
+                height: 20px;
+                width: 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="title-container">
-            <h1 class="typing-effect">chivato</h1>
+            <h1 class="typing-effect title-desktop">sotano del chivato</h1>
+            <h1 class="typing-effect title-mobile">chivato</h1>
         </div>
         
         <div class="about">
