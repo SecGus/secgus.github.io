@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My GitHub Projects</title>
+    <title>chivato</title>
     <style>
         body {
             background-color: #000;
@@ -19,17 +19,19 @@
             margin: 0 auto;
             position: relative;
             z-index: 1;
-            padding-top: 50px;
+            padding-top: 20px;
         }
         
         h1, h2 {
-            text-shadow: 0 0 5px #0f0;
-            animation: flicker 3s infinite;
+            text-shadow: 0 0 5px #0f0, 0 0 10px #0f0;
         }
         
         h1 {
-            margin-top: 80px;
+            margin: 0;
             position: relative;
+            width: 100%;
+            animation: neon-flicker 4s infinite;
+            font-size: 24px;
         }
         
         .projects {
@@ -65,21 +67,34 @@
             100% { opacity: 1; }
         }
         
+        .title-container {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            z-index: 100;
+            margin: 0;
+            background-color: transparent;
+            padding: 10px 15px;
+            border: none;
+            box-shadow: none;
+        }
+        
         .about {
-            margin-top: 60px;
+            margin-top: 20px;
             padding: 20px;
             border: 1px solid #0f0;
             box-shadow: 0 0 10px #0f0;
         }
         
         .flare {
-            position: absolute;
+            position: fixed;
             background: radial-gradient(circle, rgba(0,255,0,0.4) 0%, rgba(0,0,0,0) 70%);
             border-radius: 50%;
             pointer-events: none;
             z-index: 0;
             opacity: 0;
             animation: fadeInOut 5s infinite;
+            will-change: opacity; /* Hint to browser to optimize animations */
         }
         
         @keyframes flicker {
@@ -95,9 +110,9 @@
         }
         
         @keyframes fadeInOut {
-            0% { opacity: 0; transform: scale(0.8); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 0; transform: scale(0.8); }
+            0% { opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { opacity: 0; }
         }
         
         .typing-effect {
@@ -119,14 +134,13 @@
         }
         
         .floating {
-            animation: float 6s ease-in-out infinite;
-            transform-origin: center;
+            animation: none;
         }
         
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
+            0% { transform: none; }
+            50% { transform: none; }
+            100% { transform: none; }
         }
         
         .soundcloud-badge {
@@ -162,12 +176,11 @@
             z-index: 100;
             display: flex;
             gap: 15px;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: transparent;
             padding: 10px 15px;
-            border: 1px solid #0f0;
-            box-shadow: 0 0 10px #0f0;
-            border-radius: 4px;
-            animation: flicker 3s infinite;
+            border: none;
+            box-shadow: none;
+            border-radius: 0;
         }
         
         .socials-container a {
@@ -226,18 +239,30 @@
                 transform: translateY(0);
             }
         }
+        
+        @keyframes neon-flicker {
+            0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+                opacity: 1;
+                text-shadow: 0 0 5px #0f0, 0 0 10px #0f0, 0 0 20px #0f0;
+            }
+            20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+                opacity: 0.4;
+                text-shadow: none;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="typing-effect">sotano del chivato</h1>
+        <div class="title-container">
+            <h1 class="typing-effect">sotano del chivato</h1>
+        </div>
         
         <div class="about">
             <h2>About Me</h2>
             <div id="about-content">
                 <!-- About content without direct social links -->
                 <p>Hacker living in Lisbon funelling fidgeting into breaking & building.</p>
-                <p>Check out my socials using the dropdown menu in the top right.</p>
             </div>
         </div>
         <div class="projects">
@@ -269,6 +294,15 @@
         function createFlares() {
             const body = document.body;
             const maxFlares = 10;
+            const flareContainer = document.createElement('div');
+            flareContainer.style.position = 'fixed';
+            flareContainer.style.top = '0';
+            flareContainer.style.left = '0';
+            flareContainer.style.width = '100%';
+            flareContainer.style.height = '100%';
+            flareContainer.style.pointerEvents = 'none';
+            flareContainer.style.zIndex = '0';
+            document.body.appendChild(flareContainer);
             
             for (let i = 0; i < maxFlares; i++) {
                 setTimeout(() => {
@@ -285,10 +319,10 @@
                     flare.style.top = `${posY}px`;
                     flare.style.animationDelay = `${Math.random() * 5}s`;
                     
-                    body.appendChild(flare);
+                    flareContainer.appendChild(flare);
                     
                     setTimeout(() => {
-                        body.removeChild(flare);
+                        flareContainer.removeChild(flare);
                     }, 5000);
                     
                 }, i * 1000);
@@ -343,11 +377,11 @@
             loadProjects();
             createFlares();
             
-            // Add some floating elements for movement
-            const h1Elements = document.querySelectorAll('h1');
-            h1Elements.forEach(el => {
-                el.classList.add('floating');
-            });
+            // Remove floating elements
+            // const h1Elements = document.querySelectorAll('h1');
+            // h1Elements.forEach(el => {
+            //     el.classList.add('floating');
+            // });
         });
     </script>
 </body>
