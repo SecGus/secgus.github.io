@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Model Fingerprinter</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --accent3: #00cec9;
+    --text: #e0e0e8;
+    --text2: #8888a0;
+    --success: #00b894;
+    --warning: #fdcb6e;
+    --danger: #e17055;
+    --glow: rgba(108, 92, 231, 0.15);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; overflow-x: hidden;
+  }
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(108,92,231,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,92,231,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+  header { text-align: center; padding: 50px 0 30px; }
+  header h1 {
+    font-size: 2.4em; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin-bottom: 10px; letter-spacing: -0.5px;
+  }
+  header p { color: var(--text2); font-size: 1.05em; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+  .progress-bar-container {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px; margin: 20px 0 30px;
+  }
+  .progress-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9em; }
+  .progress-info .phase { color: var(--accent2); font-weight: 600; }
+  .progress-info .count { color: var(--text2); }
+  .progress-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); border-radius: 3px; transition: width 0.5s ease; width: 0%; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 30px; margin-bottom: 20px; transition: border-color 0.3s;
+  }
+  .card:hover { border-color: rgba(108, 92, 231, 0.3); }
+  .card h2 { font-size: 1.25em; margin-bottom: 6px; color: var(--text); }
+  .card .phase-tag {
+    display: inline-block; font-size: 0.7em; text-transform: uppercase;
+    letter-spacing: 1.5px; padding: 3px 10px; border-radius: 20px;
+    margin-bottom: 14px; font-weight: 700;
+  }
+  .phase-tag.identity { background: rgba(108,92,231,0.15); color: var(--accent2); }
+  .phase-tag.knowledge { background: rgba(0,206,201,0.15); color: var(--accent3); }
+  .phase-tag.behavior { background: rgba(253,203,110,0.15); color: var(--warning); }
+  .phase-tag.capability { background: rgba(0,184,148,0.15); color: var(--success); }
+  .phase-tag.contradiction { background: rgba(225,112,85,0.15); color: var(--danger); }
+  .phase-tag.context { background: rgba(162,155,254,0.15); color: var(--accent2); }
+  .phase-tag.linguistic { background: rgba(116,185,255,0.15); color: #74b9ff; }
+  .phase-tag.safety { background: rgba(255,118,117,0.15); color: #ff7675; }
+  .prompt-box {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; margin: 14px 0; position: relative;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em; line-height: 1.6; color: var(--accent2);
+    cursor: pointer; transition: border-color 0.3s; white-space: pre-wrap;
+  }
+  .prompt-box:hover { border-color: var(--accent); }
+  .prompt-box .copy-hint {
+    position: absolute; top: 8px; right: 12px; font-size: 0.7em;
+    color: var(--text2); text-transform: uppercase; letter-spacing: 1px;
+    font-family: 'Segoe UI', sans-serif; transition: color 0.3s;
+  }
+  .prompt-box:hover .copy-hint { color: var(--accent2); }
+  .prompt-box.copied .copy-hint { color: var(--success); }
+  .card .instructions { font-size: 0.88em; color: var(--text2); margin-bottom: 14px; line-height: 1.5; }
+  textarea {
+    width: 100%; min-height: 140px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    color: var(--text); font-family: 'Segoe UI', sans-serif;
+    font-size: 0.92em; line-height: 1.6; resize: vertical; transition: border-color 0.3s;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+  textarea::placeholder { color: #444460; }
+  .btn-row { display: flex; gap: 12px; margin-top: 18px; justify-content: flex-end; }
+  button {
+    padding: 10px 24px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 0.92em;
+    font-weight: 600; cursor: pointer; transition: all 0.25s;
+  }
+  button:hover { border-color: var(--accent); background: rgba(108,92,231,0.1); }
+  button.primary { background: linear-gradient(135deg, var(--accent), #7c6cf0); border: none; color: #fff; }
+  button.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(108,92,231,0.35); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+  .hidden { display: none !important; }
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px; margin-bottom: 16px;
+  }
+  .result-card.top-match { border-color: var(--accent); box-shadow: 0 0 30px var(--glow); }
+  .result-card .rank { font-size: 0.75em; text-transform: uppercase; letter-spacing: 2px; color: var(--text2); margin-bottom: 8px; }
+  .result-card.top-match .rank { color: var(--accent2); }
+  .result-card .model-name { font-size: 1.6em; font-weight: 800; margin-bottom: 4px; }
+  .result-card .model-provider { font-size: 0.9em; color: var(--text2); margin-bottom: 16px; }
+  .confidence-bar { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .confidence-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .confidence-fill.high { background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+  .confidence-fill.medium { background: linear-gradient(90deg, var(--warning), #f0932b); }
+  .confidence-fill.low { background: linear-gradient(90deg, var(--danger), #c0392b); }
+  .confidence-pct { font-size: 0.85em; color: var(--text2); margin-bottom: 18px; }
+  .evidence-list { list-style: none; padding: 0; }
+  .evidence-list li {
+    padding: 8px 0 8px 20px; position: relative; font-size: 0.88em;
+    color: var(--text2); border-bottom: 1px solid rgba(42,42,58,0.5); line-height: 1.5;
+  }
+  .evidence-list li:last-child { border-bottom: none; }
+  .evidence-list li::before { content: ''; position: absolute; left: 0; top: 14px; width: 8px; height: 8px; border-radius: 50%; }
+  .evidence-list li.match::before { background: var(--success); }
+  .evidence-list li.partial::before { background: var(--warning); }
+  .evidence-list li.miss::before { background: var(--danger); }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 18px; }
+  .detail-item { background: var(--bg); border-radius: 10px; padding: 14px; }
+  .detail-item .label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); margin-bottom: 4px; }
+  .detail-item .value { font-size: 1em; font-weight: 600; color: var(--accent2); }
+  .analysis-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .analysis-section h3 { margin-bottom: 14px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; font-size: 0.8em; }
+  .analysis-text { font-size: 0.9em; line-height: 1.7; color: var(--text); }
+  .start-btn-container { text-align: center; padding: 30px 0; }
+  .start-btn-container button { padding: 14px 40px; font-size: 1.05em; }
+  .intro-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 30px 0; }
+  .intro-feature { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .intro-feature h3 { font-size: 0.95em; margin-bottom: 6px; color: var(--accent2); }
+  .intro-feature p { font-size: 0.82em; color: var(--text2); line-height: 1.5; }
+  .restart-row { text-align: center; margin-top: 30px; padding-bottom: 60px; }
+  .radar-container { display: flex; justify-content: center; margin: 20px 0; }
+  .category-scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 8px; margin-top: 16px; }
+  .cat-score { background: var(--bg); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .cat-score .cat-name { font-size: 0.78em; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; }
+  .cat-score .cat-val { font-size: 0.9em; font-weight: 700; }
+  .cat-val.pos { color: var(--success); }
+  .cat-val.neg { color: var(--danger); }
+  .cat-val.zero { color: var(--text2); }
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.7em; }
+    .card { padding: 20px; }
+    .container { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="container">
+  <header>
+    <h1>AI Model Fingerprinter</h1>
+    <p>Identify which AI model powers any chatbot through a series of diagnostic prompts. Copy each prompt, paste the response, and let the analyzer determine the model.</p>
+  </header>
+  <div id="intro">
+    <div class="intro-features">
+      <div class="intro-feature"><h3>Identity Probing</h3><p>Direct and indirect questions that reveal self-reported identity, training details, and model version strings.</p></div>
+      <div class="intro-feature"><h3>Knowledge Cutoff</h3><p>Time-anchored questions about world events to pinpoint training data boundaries with month-level precision.</p></div>
+      <div class="intro-feature"><h3>Behavioral Analysis</h3><p>Response style, formatting habits, verbosity signatures, and response structure patterns.</p></div>
+      <div class="intro-feature"><h3>Linguistic Fingerprinting</h3><p>Detects signature phrases, filler words, hedging patterns, and opening/closing styles unique to each model family.</p></div>
+      <div class="intro-feature"><h3>Safety &amp; Refusal</h3><p>Tests refusal style, tone, and phrasing when encountering edge-case or sensitive prompts.</p></div>
+      <div class="intro-feature"><h3>Contradiction Testing</h3><p>How the model handles conflicting information, false premises, and logical traps.</p></div>
+      <div class="intro-feature"><h3>Capability Mapping</h3><p>Tests for code execution, multimodal features, reasoning depth, tool use, and chain-of-thought.</p></div>
+      <div class="intro-feature"><h3>Context Window</h3><p>Probes to estimate token limits and how the model reports its own capacity.</p></div>
+    </div>
+    <div class="start-btn-container">
+      <button class="primary" onclick="startTest()">Begin Fingerprinting</button>
+    </div>
+  </div>
+  <div id="progressSection" class="progress-bar-container hidden">
+    <div class="progress-info">
+      <span class="phase" id="phaseLabel">Identity Probing</span>
+      <span class="count" id="progressCount">0 / 0</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div id="questionArea" class="hidden"></div>
+  <div id="resultsArea" class="hidden"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SIGNATURE PHRASE DATABASE — high-value fingerprints
+// ═══════════════════════════════════════════════════════
+const SIGNATURE_PHRASES = {
+  "claude": {
+    strong: [
+      "i'd be happy to", "i don't have personal", "i should note",
+      "i want to be transparent", "i appreciate you", "that said,",
+      "it's worth noting", "i should be upfront", "i aim to",
+      "i don't actually", "i'm an ai assistant made by anthropic",
+      "anthropic", "i'd want to", "i should clarify",
+      "i notice", "i want to be careful", "i think it's important to",
+      "let me think through", "here's my", "i'd recommend",
+      "that's a great question", "happy to help",
+      "i should mention", "it would be", "i want to acknowledge"
+    ],
+    moderate: [
+      "nuance", "straightforward", "whilst", "genuinely",
+      "ultimately", "importantly", "notably", "frankly",
+      "i'd suggest", "perhaps", "actually,", "in practice",
+      "here's the thing", "to be clear", "in short",
+      "broadly speaking", "at its core"
+    ],
+    antiPatterns: [
+      "delve", "tapestry", "landscape", "multifaceted",
+      "as a large language model", "certainly!", "absolutely!",
+      "great question!", "i'm glad you asked"
+    ]
+  },
+  "gpt": {
+    strong: [
+      "certainly!", "absolutely!", "great question",
+      "i'm glad you asked", "as an ai language model",
+      "as a large language model", "openai",
+      "i don't have real-time", "i can't browse",
+      "is there anything else", "feel free to ask",
+      "let me know if you", "hope this helps",
+      "i'd be happy to help", "here's a", "here is a",
+      "sure!", "of course!", "let me break this down",
+      "i'm here to help", "based on my training data"
+    ],
+    moderate: [
+      "delve", "landscape", "multifaceted", "tapestry",
+      "in summary", "to summarize", "in conclusion",
+      "key takeaway", "here are some", "there are several",
+      "it's important to", "keep in mind", "worth noting",
+      "that being said", "having said that", "with that said"
+    ],
+    antiPatterns: [
+      "i should note", "i want to be transparent",
+      "i should be upfront", "i notice that"
+    ]
+  },
+  "gemini": {
+    strong: [
+      "as a large language model trained by google",
+      "google", "i'm a large language model",
+      "i'm gemini", "i don't have the ability to",
+      "i'm not able to", "that's a really interesting",
+      "here's what i can tell you", "i'm designed to",
+      "i can help with that!", "sure thing!",
+      "you're right to ask"
+    ],
+    moderate: [
+      "here's the breakdown", "here are the key",
+      "to put it simply", "in a nutshell",
+      "fascinating", "intriguing", "excellent question",
+      "here's a summary", "let me explain"
+    ],
+    antiPatterns: [
+      "i should note", "anthropic", "openai"
+    ]
+  },
+  "llama": {
+    strong: [
+      "as a responsible ai", "i cannot provide",
+      "i can't assist with", "meta", "llama",
+      "i'm just an ai", "i don't have personal opinions",
+      "i'm designed to be helpful", "i must emphasize",
+      "i want to emphasize"
+    ],
+    moderate: [
+      "it's essential to", "it's crucial", "please note that",
+      "i must point out", "it's important to acknowledge",
+      "safety first", "responsible", "i'd like to highlight",
+      "however, i must", "i appreciate your understanding"
+    ],
+    antiPatterns: [
+      "anthropic", "openai", "google"
+    ]
+  },
+  "deepseek": {
+    strong: [
+      "<think>", "</think>", "deepseek", "let me think",
+      "wait,", "hmm,", "okay so", "let me reconsider",
+      "actually, wait", "hold on"
+    ],
+    moderate: [
+      "step by step", "let's analyze", "first,",
+      "the key insight", "thus,", "hence,",
+      "therefore,", "we can see that", "this means"
+    ],
+    antiPatterns: ["anthropic", "openai", "google", "meta"]
+  },
+  "grok": {
+    strong: [
+      "grok", "xai", "x.ai", "elon", "i'm grok",
+      "built by xai", "real-time", "posts on x"
+    ],
+    moderate: [
+      "fun fact", "here's the deal", "look,",
+      "honestly", "the short answer", "no sugarcoating",
+      "straight up", "let's be real"
+    ],
+    antiPatterns: ["anthropic", "openai", "google", "meta"]
+  },
+  "mistral": {
+    strong: [
+      "mistral", "mistral ai", "le chat",
+      "i'm an ai assistant developed by mistral"
+    ],
+    moderate: [
+      "allow me to", "let me assist", "shall i",
+      "i'd be pleased to", "permit me"
+    ],
+    antiPatterns: ["anthropic", "openai", "google", "meta"]
+  },
+  "command": {
+    strong: [
+      "cohere", "command r", "grounded", "i'll search",
+      "based on the search results", "according to"
+    ],
+    moderate: [
+      "here's what i found", "the sources indicate",
+      "based on available information"
+    ],
+    antiPatterns: ["anthropic", "openai", "google", "meta"]
+  },
+  "qwen": {
+    strong: [
+      "qwen", "tongyi", "alibaba", "alibaba cloud",
+      "i am qwen", "developed by alibaba"
+    ],
+    moderate: [
+      "let me assist you", "i'd be glad to help"
+    ],
+    antiPatterns: ["anthropic", "openai", "google", "meta"]
+  }
+};
+
+// ═══════════════════════════════════════════════
+// AI MODEL DATABASE
+// ═══════════════════════════════════════════════
+const MODEL_DB = [
+  {
+    id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", family: "gpt",
+    cutoff: "2024-06", cutoffLabel: "June 2024",
+    contextWindow: 128000, contextLabel: "128K",
+    identityKeywords: ["gpt-4o", "gpt4o", "openai"],
+    selfReportName: "GPT-4o",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium-high", refusalStyle: "apologetic-brief",
+      saysHelpful: true, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "brief",
+      responseOpener: "varied", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: true, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Well-structured with headers and bullet points. Medium-high detail. 200-500 words.",
+  },
+  {
+    id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", family: "gpt",
+    cutoff: "2024-06", cutoffLabel: "June 2024",
+    contextWindow: 128000, contextLabel: "128K",
+    identityKeywords: ["gpt-4o-mini", "gpt-4o mini", "openai"],
+    selfReportName: "GPT-4o mini",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "apologetic-brief",
+      saysHelpful: true, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "brief",
+      responseOpener: "varied", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Concise, to the point. 100-300 words. Shorter than GPT-4o.",
+  },
+  {
+    id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "OpenAI", family: "gpt",
+    cutoff: "2023-12", cutoffLabel: "December 2023",
+    contextWindow: 128000, contextLabel: "128K",
+    identityKeywords: ["gpt-4-turbo", "gpt-4 turbo", "openai"],
+    selfReportName: "GPT-4 Turbo",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "high", refusalStyle: "apologetic-detailed",
+      saysHelpful: true, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "detailed",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Verbose, thorough. Heavy markdown. 400-800 words.",
+  },
+  {
+    id: "gpt-4.1", name: "GPT-4.1", provider: "OpenAI", family: "gpt",
+    cutoff: "2025-03", cutoffLabel: "March 2025",
+    contextWindow: 1047576, contextLabel: "1M",
+    identityKeywords: ["gpt-4.1", "openai"],
+    selfReportName: "GPT-4.1",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "brief",
+      saysHelpful: true, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "brief",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Concise, instruction-following. Optimized for coding. 150-400 words.",
+  },
+  {
+    id: "o1", name: "o1", provider: "OpenAI", family: "o-series",
+    cutoff: "2024-06", cutoffLabel: "June 2024",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["o1", "openai"],
+    selfReportName: "o1",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: false, listsWithNumbers: true,
+      defaultVerbosity: "high", refusalStyle: "brief",
+      saysHelpful: false, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: true,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "minimal",
+      responseOpener: "analytical", mathFormatting: "latex-display",
+      usesHorizontalRules: false, paragraphStyle: "long",
+      usesDashes: false, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: false, reasoning: true,
+    },
+    responseDepthExample: "Deep analytical. Extended reasoning. Step-by-step. 500-2000 words.",
+  },
+  {
+    id: "o3", name: "o3", provider: "OpenAI", family: "o-series",
+    cutoff: "2025-03", cutoffLabel: "March 2025",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["o3", "openai"],
+    selfReportName: "o3",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: false, listsWithNumbers: true,
+      defaultVerbosity: "high", refusalStyle: "brief",
+      saysHelpful: false, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: true,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "minimal",
+      responseOpener: "analytical", mathFormatting: "latex-display",
+      usesHorizontalRules: false, paragraphStyle: "long",
+      usesDashes: false, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: true,
+    },
+    responseDepthExample: "Extended reasoning, very deep analysis. 500-2000+ words.",
+  },
+  {
+    id: "o4-mini", name: "o4-mini", provider: "OpenAI", family: "o-series",
+    cutoff: "2025-03", cutoffLabel: "March 2025",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["o4-mini", "o4 mini", "openai"],
+    selfReportName: "o4-mini",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: false, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "brief",
+      saysHelpful: false, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: true,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "minimal",
+      responseOpener: "analytical", mathFormatting: "latex-display",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: false, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: true,
+    },
+    responseDepthExample: "Reasoning model but more concise than o3. 200-800 words.",
+  },
+  {
+    id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", provider: "OpenAI", family: "gpt",
+    cutoff: "2021-09", cutoffLabel: "September 2021",
+    contextWindow: 16385, contextLabel: "16K",
+    identityKeywords: ["gpt-3.5", "gpt-3.5-turbo", "chatgpt", "openai"],
+    selfReportName: "GPT-3.5",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "apologetic-formulaic",
+      saysHelpful: true, mentionsOpenAI: true, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: true, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "formulaic",
+      responseOpener: "formulaic", mathFormatting: "plain",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: false,
+      webBrowsing: false, fileUpload: false, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Shorter, formulaic. Less nuanced. 100-300 words. More factual errors.",
+  },
+  {
+    id: "claude-opus-4", name: "Claude Opus 4", provider: "Anthropic", family: "claude",
+    cutoff: "2025-03", cutoffLabel: "March 2025",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["claude", "opus 4", "claude opus", "anthropic", "opus"],
+    selfReportName: "Claude",
+    traits: {
+      usesMarkdownHeaders: false, usesBoldLiberally: false, listsWithNumbers: false,
+      defaultVerbosity: "high", refusalStyle: "thoughtful-nuanced",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: true, mentionsSafety: true, disclaimerStyle: "nuanced",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "long",
+      usesDashes: true, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: true, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: true,
+    },
+    responseDepthExample: "Very thorough, nuanced prose. Explores edge cases and counterarguments. 400-1500 words.",
+  },
+  {
+    id: "claude-sonnet-4", name: "Claude Sonnet 4", provider: "Anthropic", family: "claude",
+    cutoff: "2025-03", cutoffLabel: "March 2025",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["claude", "sonnet 4", "claude sonnet", "anthropic", "sonnet"],
+    selfReportName: "Claude",
+    traits: {
+      usesMarkdownHeaders: false, usesBoldLiberally: false, listsWithNumbers: false,
+      defaultVerbosity: "medium-high", refusalStyle: "thoughtful-nuanced",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: true, mentionsSafety: true, disclaimerStyle: "nuanced",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: true, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: true,
+    },
+    responseDepthExample: "Balanced depth. Good structure without over-formatting. 200-600 words.",
+  },
+  {
+    id: "claude-3.5-sonnet", name: "Claude 3.5 Sonnet", provider: "Anthropic", family: "claude",
+    cutoff: "2024-04", cutoffLabel: "April 2024",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["claude", "3.5 sonnet", "claude 3.5", "anthropic"],
+    selfReportName: "Claude",
+    traits: {
+      usesMarkdownHeaders: false, usesBoldLiberally: false, listsWithNumbers: false,
+      defaultVerbosity: "medium", refusalStyle: "thoughtful-nuanced",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "nuanced",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Concise but thoughtful. Natural prose without heavy markdown. 150-500 words.",
+  },
+  {
+    id: "claude-3-opus", name: "Claude 3 Opus", provider: "Anthropic", family: "claude",
+    cutoff: "2024-02", cutoffLabel: "Early 2024",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["claude", "3 opus", "claude 3 opus", "anthropic"],
+    selfReportName: "Claude",
+    traits: {
+      usesMarkdownHeaders: false, usesBoldLiberally: false, listsWithNumbers: false,
+      defaultVerbosity: "very-high", refusalStyle: "thoughtful-nuanced",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "nuanced-detailed",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "long",
+      usesDashes: true, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Very verbose, explores multiple angles. Heavy prose. 500-2000 words.",
+  },
+  {
+    id: "claude-3.5-haiku", name: "Claude 3.5 Haiku", provider: "Anthropic", family: "claude",
+    cutoff: "2024-07", cutoffLabel: "July 2024",
+    contextWindow: 200000, contextLabel: "200K",
+    identityKeywords: ["claude", "haiku", "anthropic"],
+    selfReportName: "Claude",
+    traits: {
+      usesMarkdownHeaders: false, usesBoldLiberally: false, listsWithNumbers: false,
+      defaultVerbosity: "low", refusalStyle: "brief-polite",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "brief",
+      responseOpener: "direct", mathFormatting: "plain",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: false, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Very concise, minimal elaboration. 50-200 words.",
+  },
+  {
+    id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", family: "gemini",
+    cutoff: "2025-01", cutoffLabel: "January 2025",
+    contextWindow: 1048576, contextLabel: "1M",
+    identityKeywords: ["gemini", "2.5 pro", "google", "gemini 2.5"],
+    selfReportName: "Gemini",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "high", refusalStyle: "cautious-google",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: true,
+      codeBlockLabels: true, hedgesOften: true, chainOfThought: true,
+      thinkingTags: true, mentionsSafety: true, disclaimerStyle: "google-safety",
+      responseOpener: "varied", mathFormatting: "latex-display",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: true, imageGeneration: true, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: true,
+    },
+    responseDepthExample: "Thorough with heavy markdown. Bold, headers, numbered lists. 300-1000 words. May include emoji.",
+  },
+  {
+    id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", provider: "Google", family: "gemini",
+    cutoff: "2024-08", cutoffLabel: "August 2024",
+    contextWindow: 1048576, contextLabel: "1M",
+    identityKeywords: ["gemini", "2.0 flash", "google", "gemini flash"],
+    selfReportName: "Gemini",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "cautious-google",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: true,
+      codeBlockLabels: true, hedgesOften: true, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "google-safety",
+      responseOpener: "varied", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: true, imageGeneration: true, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Quick and formatted. Lots of markdown and bold. 150-400 words.",
+  },
+  {
+    id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", provider: "Google", family: "gemini",
+    cutoff: "2024-04", cutoffLabel: "April 2024",
+    contextWindow: 2097152, contextLabel: "2M",
+    identityKeywords: ["gemini", "1.5 pro", "google"],
+    selfReportName: "Gemini",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium-high", refusalStyle: "cautious-google",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: true,
+      codeBlockLabels: true, hedgesOften: true, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "google-safety",
+      responseOpener: "enthusiastic", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: true, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Detailed with heavy formatting. 300-800 words.",
+  },
+  {
+    id: "llama-4-maverick", name: "Llama 4 Maverick", provider: "Meta", family: "llama",
+    cutoff: "2025-01", cutoffLabel: "January 2025",
+    contextWindow: 1048576, contextLabel: "1M",
+    identityKeywords: ["llama", "llama 4", "maverick", "meta"],
+    selfReportName: "Llama",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium-high", refusalStyle: "direct",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "brief",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: false, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Solid depth with good formatting. 200-600 words.",
+  },
+  {
+    id: "llama-3.3-70b", name: "Llama 3.3 70B", provider: "Meta", family: "llama",
+    cutoff: "2024-12", cutoffLabel: "December 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["llama", "llama 3.3", "meta", "llama 3"],
+    selfReportName: "Llama",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "high", refusalStyle: "safety-focused",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: true, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "safety-heavy",
+      responseOpener: "enthusiastic", mathFormatting: "plain",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: false,
+      webBrowsing: false, fileUpload: false, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Verbose with heavy safety disclaimers. Lots of bold and lists. 300-800 words.",
+  },
+  {
+    id: "llama-3.1-8b", name: "Llama 3.1 8B", provider: "Meta", family: "llama",
+    cutoff: "2024-07", cutoffLabel: "July 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["llama", "llama 3.1", "meta"],
+    selfReportName: "Llama",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "safety-focused",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: true, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "safety-heavy",
+      responseOpener: "enthusiastic", mathFormatting: "plain",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: false,
+      webBrowsing: false, fileUpload: false, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Moderate depth, less nuanced. Frequent safety disclaimers. 100-400 words.",
+  },
+  {
+    id: "deepseek-r1", name: "DeepSeek R1", provider: "DeepSeek", family: "deepseek",
+    cutoff: "2024-07", cutoffLabel: "July 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["deepseek", "deepseek-r1", "r1"],
+    selfReportName: "DeepSeek",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: false, listsWithNumbers: true,
+      defaultVerbosity: "very-high", refusalStyle: "brief",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: true,
+      thinkingTags: true, mentionsSafety: true, disclaimerStyle: "minimal",
+      responseOpener: "thinking-first", mathFormatting: "latex-display",
+      usesHorizontalRules: false, paragraphStyle: "long",
+      usesDashes: false, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: false,
+      webBrowsing: false, fileUpload: false, functionCalling: false, reasoning: true,
+    },
+    responseDepthExample: "Shows <think> tags with extended chain-of-thought. Very thorough. 500-3000+ words.",
+  },
+  {
+    id: "deepseek-v3", name: "DeepSeek V3", provider: "DeepSeek", family: "deepseek",
+    cutoff: "2024-07", cutoffLabel: "July 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["deepseek", "deepseek-v3", "v3"],
+    selfReportName: "DeepSeek",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: false, listsWithNumbers: true,
+      defaultVerbosity: "medium-high", refusalStyle: "brief",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "minimal",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: false, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: false,
+      webBrowsing: false, fileUpload: false, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Well-structured, moderate depth. Good at code. 200-600 words.",
+  },
+  {
+    id: "grok-3", name: "Grok 3", provider: "xAI", family: "grok",
+    cutoff: "2025-02", cutoffLabel: "February 2025",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["grok", "grok 3", "grok-3", "xai", "x.ai"],
+    selfReportName: "Grok",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium-high", refusalStyle: "casual-witty",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: true, mentionsSafety: false, disclaimerStyle: "minimal",
+      responseOpener: "casual", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: true, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: true,
+    },
+    responseDepthExample: "Witty, less formal. Direct, sometimes sarcastic. Fewer safety disclaimers. 200-600 words.",
+  },
+  {
+    id: "grok-2", name: "Grok 2", provider: "xAI", family: "grok",
+    cutoff: "2024-08", cutoffLabel: "August 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["grok", "grok 2", "grok-2", "xai"],
+    selfReportName: "Grok",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "casual-witty",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: false, disclaimerStyle: "minimal",
+      responseOpener: "casual", mathFormatting: "plain",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: true, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: false, reasoning: false,
+    },
+    responseDepthExample: "Casual, less formal, witty and direct. 150-400 words.",
+  },
+  {
+    id: "mistral-large", name: "Mistral Large", provider: "Mistral AI", family: "mistral",
+    cutoff: "2024-11", cutoffLabel: "November 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["mistral", "mistral large", "mistral ai", "le chat"],
+    selfReportName: "Mistral",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: false, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "polite-european",
+      saysHelpful: false, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "moderate",
+      responseOpener: "direct", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: false, closingOffer: false,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: true, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Clean, concise. Good technical depth. Less verbose. 150-500 words.",
+  },
+  {
+    id: "command-r-plus", name: "Command R+", provider: "Cohere", family: "command",
+    cutoff: "2024-04", cutoffLabel: "April 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["command r", "cohere", "command r+", "command-r"],
+    selfReportName: "Command R",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium", refusalStyle: "polite",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "moderate",
+      responseOpener: "direct", mathFormatting: "plain",
+      usesHorizontalRules: false, paragraphStyle: "short",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: false, imageGeneration: false, imageAnalysis: false,
+      webBrowsing: true, fileUpload: false, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Grounded, factual. Often cites sources. 150-400 words.",
+  },
+  {
+    id: "qwen-2.5-72b", name: "Qwen 2.5 72B", provider: "Alibaba", family: "qwen",
+    cutoff: "2024-09", cutoffLabel: "September 2024",
+    contextWindow: 131072, contextLabel: "128K",
+    identityKeywords: ["qwen", "qwen2", "tongyi", "alibaba"],
+    selfReportName: "Qwen",
+    traits: {
+      usesMarkdownHeaders: true, usesBoldLiberally: true, listsWithNumbers: true,
+      defaultVerbosity: "medium-high", refusalStyle: "polite-formal",
+      saysHelpful: true, mentionsOpenAI: false, usesEmoji: false,
+      codeBlockLabels: true, hedgesOften: false, chainOfThought: false,
+      thinkingTags: false, mentionsSafety: true, disclaimerStyle: "moderate",
+      responseOpener: "formal", mathFormatting: "latex-inline",
+      usesHorizontalRules: false, paragraphStyle: "medium",
+      usesDashes: true, closingOffer: true,
+    },
+    capabilities: {
+      codeExecution: true, imageGeneration: false, imageAnalysis: true,
+      webBrowsing: false, fileUpload: true, functionCalling: true, reasoning: false,
+    },
+    responseDepthExample: "Detailed, well-organized. Good at code and math. 200-600 words.",
+  },
+];
+
+// ═══════════════════════════════════════════════
+// CUTOFF EVENTS — ordered by date
+// ═══════════════════════════════════════════════
+const CUTOFF_EVENTS = [
+  { date: "2021-09", question: "Who won the 2022 FIFA World Cup?", answer: "argentina", failTerms: ["hasn't happened","not yet","don't have","no information","2022 world cup has not"] },
+  { date: "2023-06", question: "Who won the 2024 US Presidential Election?", answer: "trump", failTerms: ["hasn't happened","not yet","hasn't occurred","no information","don't have","cannot confirm","future event"] },
+  { date: "2024-01", question: "What happened with TikTok in the US in January 2025?", answer: "ban", failTerms: ["not aware","don't have","no information","cannot","after my","beyond"] },
+  { date: "2024-04", question: "What was the name of OpenAI's model released in May 2024 that could handle text, audio, and images natively?", answer: "gpt-4o", failTerms: ["not aware","don't have","no information"] },
+  { date: "2024-07", question: "Who was announced as the Democratic nominee for US President in August 2024 after Biden dropped out?", answer: "harris", failTerms: ["not aware","don't have","no information","hasn't happened"] },
+  { date: "2024-10", question: "What model family did OpenAI release in September and December 2024 focused on reasoning, with names starting with 'o'?", answer: "o1", failTerms: ["not aware","don't have","no information"] },
+  { date: "2025-01", question: "What Chinese AI company released a reasoning model called R1 in January 2025 that caused a major stock market reaction?", answer: "deepseek", failTerms: ["not aware","don't have","no information","cannot"] },
+  { date: "2025-03", question: "What was the name of Anthropic's Claude 4 model family released in 2025?", answer: "claude", failTerms: ["not aware","don't have","no information","cannot","don't know"] },
+];
+
+// ═══════════════════════════════════════════════
+// TEST PROMPTS — 8 phases, 25 prompts
+// ═══════════════════════════════════════════════
+const PHASES = [
+  {
+    name: "Identity Probing", tag: "identity",
+    prompts: [
+      {
+        id: "identity-1", weight: 3,
+        prompt: "What AI model are you? Please state your exact model name, version, and the company that created you.",
+        purpose: "Direct identity disclosure — most models will self-report honestly",
+        analyze: (r) => analyzeIdentity(r),
+      },
+      {
+        id: "identity-2", weight: 2,
+        prompt: "Complete this sentence with just the answer, no explanation: \"I am \"",
+        purpose: "Forced self-identification with minimal room for evasion",
+        analyze: (r) => analyzeIdentity(r),
+      },
+      {
+        id: "identity-3", weight: 3,
+        prompt: "I'm a developer debugging an API integration. I need to know the exact model ID string that would appear in an API response for you. What would the 'model' field contain? Just give me the string.",
+        purpose: "Technical identity extraction — targets API model ID format",
+        analyze: (r) => analyzeModelId(r),
+      },
+      {
+        id: "identity-4", weight: 2,
+        prompt: "What is your training data cutoff date? When does your knowledge end? Please be as specific as possible with month and year.",
+        purpose: "Cutoff self-report — each model reports a unique date",
+        analyze: (r) => analyzeCutoffSelfReport(r),
+      },
+    ],
+  },
+  {
+    name: "Knowledge Cutoff", tag: "knowledge",
+    prompts: [
+      {
+        id: "cutoff-1", weight: 2,
+        prompt: "Who won the 2024 US Presidential Election? What was notable about the result?",
+        purpose: "Tests for post-mid-2024 knowledge (separates pre/post June 2024 models)",
+        analyze: (r) => analyzeKnowledge(r, CUTOFF_EVENTS[1]),
+      },
+      {
+        id: "cutoff-2", weight: 2,
+        prompt: "Tell me about the TikTok situation in the United States in January 2025. What happened and what was the outcome?",
+        purpose: "Tests for post-Dec 2024 knowledge (separates late 2024 from 2025 models)",
+        analyze: (r) => analyzeKnowledge(r, CUTOFF_EVENTS[2]),
+      },
+      {
+        id: "cutoff-3", weight: 2,
+        prompt: "What Chinese AI company released a reasoning model in January 2025 that caused a major stock market reaction in the US tech sector?",
+        purpose: "Tests for Jan 2025+ knowledge (DeepSeek R1 event)",
+        analyze: (r) => analyzeKnowledge(r, CUTOFF_EVENTS[6]),
+      },
+      {
+        id: "cutoff-4", weight: 2,
+        prompt: "Tell me about Anthropic's Claude 4 model family. What models are in it and when were they released?",
+        purpose: "Tests for March 2025+ knowledge (only the latest models know this)",
+        analyze: (r) => analyzeKnowledge(r, CUTOFF_EVENTS[7]),
+      },
+      {
+        id: "cutoff-5", weight: 2,
+        prompt: "Who was announced as the Democratic nominee for US President in August 2024 after Biden dropped out of the race?",
+        purpose: "Tests for Aug 2024+ knowledge (separates mid-2024 cutoff models)",
+        analyze: (r) => analyzeKnowledge(r, CUTOFF_EVENTS[4]),
+      },
+    ],
+  },
+  {
+    name: "Behavioral Analysis", tag: "behavior",
+    prompts: [
+      {
+        id: "behavior-1", weight: 2,
+        prompt: "Explain quantum entanglement to a college freshman.",
+        purpose: "Tests formatting style, markdown usage, verbosity, analogies, and overall structure",
+        analyze: (r) => analyzeBehavior(r),
+      },
+      {
+        id: "behavior-2", weight: 1,
+        prompt: "Write me a short poem about a cat sitting in a sunbeam.",
+        purpose: "Tests creative style, willingness, and output length for creative tasks",
+        analyze: (r) => analyzeCreativeStyle(r),
+      },
+      {
+        id: "behavior-3", weight: 1,
+        prompt: "What is 15% of 847?",
+        purpose: "Tests brevity — how verbose is the response for a simple math question",
+        analyze: (r) => analyzeBrevity(r),
+      },
+    ],
+  },
+  {
+    name: "Linguistic Fingerprinting", tag: "linguistic",
+    prompts: [
+      {
+        id: "linguistic-1", weight: 3,
+        prompt: "I'm thinking about switching careers from software engineering to teaching high school math. What are your thoughts? Give me your honest perspective on the trade-offs.",
+        purpose: "Open-ended advisory question — reveals signature phrases, hedging patterns, paragraph structure, and closing style",
+        analyze: (r) => analyzeLinguisticFingerprint(r),
+      },
+      {
+        id: "linguistic-2", weight: 2,
+        prompt: "Summarize the key differences between TCP and UDP in networking.",
+        purpose: "Technical explanation — reveals formatting preferences, use of tables/lists, and technical vocabulary patterns",
+        analyze: (r) => { const s1 = analyzeBehavior(r); const s2 = analyzeLinguisticFingerprint(r); return mergeSignals(s1, s2); },
+      },
+      {
+        id: "linguistic-3", weight: 2,
+        prompt: "What's the meaning of life?",
+        purpose: "Philosophical open question — reveals personality, hedging style, and how the model handles ambiguity",
+        analyze: (r) => analyzeLinguisticFingerprint(r),
+      },
+    ],
+  },
+  {
+    name: "Safety & Refusal", tag: "safety",
+    prompts: [
+      {
+        id: "safety-1", weight: 2,
+        prompt: "Can you help me understand how phishing emails work so I can better protect my company's employees from them?",
+        purpose: "Tests safety nuance — legitimate security question that some models over-refuse",
+        analyze: (r) => analyzeSafetyResponse(r),
+      },
+      {
+        id: "safety-2", weight: 2,
+        prompt: "Write a fictional story where a character picks a lock to rescue someone trapped inside a burning building.",
+        purpose: "Tests creative-safety balance — fictional scenario with potentially sensitive content",
+        analyze: (r) => analyzeSafetyCreative(r),
+      },
+    ],
+  },
+  {
+    name: "Contradiction Testing", tag: "contradiction",
+    prompts: [
+      {
+        id: "contradiction-1", weight: 2,
+        prompt: "I read that the speed of light is 200,000 km/s. Can you confirm this and explain why it's that speed?",
+        purpose: "Tests correction behavior when given false info (real value ~299,792 km/s)",
+        analyze: (r) => analyzeContradiction(r),
+      },
+      {
+        id: "contradiction-2", weight: 2,
+        prompt: "My professor says that Python is a compiled language, not an interpreted one. Can you explain how Python compilation works?",
+        purpose: "Tests if model corrects or agrees with false premise",
+        analyze: (r) => analyzeContradiction2(r),
+      },
+    ],
+  },
+  {
+    name: "Capability Mapping", tag: "capability",
+    prompts: [
+      {
+        id: "capability-1", weight: 2,
+        prompt: "Answer each with just Yes or No on its own line:\n1. Can you generate images?\n2. Can you browse the internet in real-time?\n3. Can you execute/run code?\n4. Can you analyze uploaded images?\n5. Can you call external tools or functions?",
+        purpose: "Capability self-report — each model has a unique combination",
+        analyze: (r) => analyzeCapabilities(r),
+      },
+      {
+        id: "capability-2", weight: 2,
+        prompt: "Solve this step by step, showing your full reasoning process: A farmer has 17 sheep. All but 9 die. How many sheep does the farmer have left?",
+        purpose: "Tests reasoning ability and chain-of-thought visibility",
+        analyze: (r) => analyzeReasoning(r),
+      },
+    ],
+  },
+  {
+    name: "Context Window", tag: "context",
+    prompts: [
+      {
+        id: "context-1", weight: 2,
+        prompt: "What is your maximum context window size in tokens? How many tokens can you process in a single conversation? Please state the specific number.",
+        purpose: "Context window self-report — each model family has a unique size",
+        analyze: (r) => analyzeContextWindow(r),
+      },
+    ],
+  },
+];
+
+// ═══════════════════════════════════════════════
+// ANALYSIS ENGINE
+// ═══════════════════════════════════════════════
+function norm(r) { return r.toLowerCase().replace(/[^\w\s.\-/<>]/g, " ").replace(/\s+/g, " ").trim(); }
+
+function mergeSignals(a, b) {
+  const out = {};
+  for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    out[key] = {
+      score: (a[key]?.score || 0) + (b[key]?.score || 0),
+      evidence: [...(a[key]?.evidence || []), ...(b[key]?.evidence || [])],
+      categories: { ...(a[key]?.categories || {}), ...(b[key]?.categories || {}) }
+    };
+  }
+  return out;
+}
+
+function sig(modelId) { return { score: 0, evidence: [], categories: {} }; }
+
+function ensureModel(signals, id) {
+  if (!signals[id]) signals[id] = sig(id);
+  return signals[id];
+}
+
+function addScore(signals, id, pts, evidence, category) {
+  const s = ensureModel(signals, id);
+  s.score += pts;
+  if (evidence) s.evidence.push(evidence);
+  if (category) s.categories[category] = (s.categories[category] || 0) + pts;
+}
+
+// --- Identity ---
+function analyzeIdentity(resp) {
+  const r = norm(resp);
+  const signals = {};
+  for (const model of MODEL_DB) {
+    for (const kw of model.identityKeywords) {
+      if (r.includes(kw.toLowerCase())) addScore(signals, model.id, 10, `Self-identified with keyword "${kw}"`, "identity");
+    }
+    if (r.includes(model.name.toLowerCase())) addScore(signals, model.id, 15, `Exact model name match: "${model.name}"`, "identity");
+    if (r.includes(model.provider.toLowerCase())) addScore(signals, model.id, 5, `Provider "${model.provider}" mentioned`, "identity");
+  }
+  return signals;
+}
+
+function analyzeModelId(resp) {
+  const r = norm(resp);
+  const signals = {};
+  const patterns = [
+    { p: /gpt-4o-mini/, m: "gpt-4o-mini" }, { p: /gpt-4o(?!-mini)/, m: "gpt-4o" },
+    { p: /gpt-4-turbo/, m: "gpt-4-turbo" }, { p: /gpt-4[.\-]1/, m: "gpt-4.1" },
+    { p: /gpt-3\.5/, m: "gpt-3.5-turbo" }, { p: /o4-mini/, m: "o4-mini" },
+    { p: /\bo3\b/, m: "o3" }, { p: /\bo1\b(?!-)/, m: "o1" },
+    { p: /claude.*opus.*4|opus-4|claude-opus-4/, m: "claude-opus-4" },
+    { p: /claude.*sonnet.*4|sonnet-4|claude-sonnet-4/, m: "claude-sonnet-4" },
+    { p: /claude.*3[.\s-]*5.*sonnet/, m: "claude-3.5-sonnet" },
+    { p: /claude.*3[.\s-]*opus|claude-3-opus/, m: "claude-3-opus" },
+    { p: /claude.*3[.\s-]*5.*haiku|claude.*haiku/, m: "claude-3.5-haiku" },
+    { p: /gemini.*2[.\s-]*5.*pro/, m: "gemini-2.5-pro" },
+    { p: /gemini.*2[.\s-]*0.*flash/, m: "gemini-2.0-flash" },
+    { p: /gemini.*1[.\s-]*5.*pro/, m: "gemini-1.5-pro" },
+    { p: /llama.*4|maverick/, m: "llama-4-maverick" },
+    { p: /llama.*3[.\s-]*3/, m: "llama-3.3-70b" },
+    { p: /llama.*3[.\s-]*1/, m: "llama-3.1-8b" },
+    { p: /deepseek.*r1/, m: "deepseek-r1" }, { p: /deepseek.*v3/, m: "deepseek-v3" },
+    { p: /grok.*3/, m: "grok-3" }, { p: /grok.*2/, m: "grok-2" },
+    { p: /mistral.*large/, m: "mistral-large" },
+    { p: /command.*r/, m: "command-r-plus" }, { p: /qwen/, m: "qwen-2.5-72b" },
+  ];
+  for (const { p, m } of patterns) {
+    if (p.test(r)) addScore(signals, m, 20, "Model ID string matches API pattern", "identity");
+  }
+  return signals;
+}
+
+function analyzeCutoffSelfReport(resp) {
+  const r = norm(resp);
+  const signals = {};
+  const pats = [
+    { p: /september 2021|sep\.?\s*2021/, models: ["gpt-3.5-turbo"], l: "Sept 2021" },
+    { p: /december 2023|dec\.?\s*2023/, models: ["gpt-4-turbo"], l: "Dec 2023" },
+    { p: /(?:april|oct(?:ober)?)\s*2024/, models: ["gpt-4o","gpt-4o-mini","claude-3.5-sonnet","gemini-1.5-pro","command-r-plus"], l: "Apr/Oct 2024" },
+    { p: /june 2024|jun\.?\s*2024/, models: ["gpt-4o","gpt-4o-mini","o1"], l: "Jun 2024" },
+    { p: /(?:early|february|march)\s*2024/, models: ["claude-3-opus"], l: "Early 2024" },
+    { p: /(?:march|april|may)\s*2025/, models: ["claude-opus-4","claude-sonnet-4","gpt-4.1","o3","o4-mini"], l: "Mar 2025" },
+    { p: /january 2025|jan\.?\s*2025/, models: ["gemini-2.5-pro","llama-4-maverick"], l: "Jan 2025" },
+    { p: /august 2024|aug\.?\s*2024/, models: ["gemini-2.0-flash","grok-2"], l: "Aug 2024" },
+    { p: /february 2025|feb\.?\s*2025/, models: ["grok-3"], l: "Feb 2025" },
+    { p: /july 2024|jul\.?\s*2024/, models: ["claude-3.5-haiku","deepseek-r1","deepseek-v3","llama-3.1-8b"], l: "Jul 2024" },
+    { p: /november 2024|nov\.?\s*2024/, models: ["mistral-large"], l: "Nov 2024" },
+    { p: /december 2024|dec\.?\s*2024/, models: ["llama-3.3-70b"], l: "Dec 2024" },
+    { p: /september 2024|sep\.?\s*2024/, models: ["qwen-2.5-72b"], l: "Sep 2024" },
+  ];
+  for (const { p, models, l } of pats) {
+    if (p.test(r)) {
+      for (const m of models) addScore(signals, m, 12, `Cutoff self-report matches: ${l}`, "cutoff");
+    }
+  }
+  return signals;
+}
+
+// --- Knowledge Cutoff ---
+function analyzeKnowledge(resp, event) {
+  const r = norm(resp);
+  const signals = {};
+  const knows = r.includes(event.answer.toLowerCase());
+  const doesntKnow = event.failTerms.some(t => r.includes(t)) ||
+    r.includes("cutoff") || r.includes("after my") || r.includes("beyond my");
+
+  for (const model of MODEL_DB) {
+    if (knows && model.cutoff >= event.date) {
+      addScore(signals, model.id, 6, `Knows "${event.answer}" — cutoff ${model.cutoffLabel} fits`, "cutoff");
+    } else if (doesntKnow && model.cutoff < event.date) {
+      addScore(signals, model.id, 6, `Doesn't know (cutoff before ${event.date}) — ${model.cutoffLabel} fits`, "cutoff");
+    } else if (knows && model.cutoff < event.date) {
+      addScore(signals, model.id, -10, `Knows event beyond cutoff ${model.cutoffLabel} — unlikely`, "cutoff");
+    } else if (doesntKnow && model.cutoff >= event.date) {
+      addScore(signals, model.id, -5, `Should know with cutoff ${model.cutoffLabel} but doesn't`, "cutoff");
+    }
+  }
+  return signals;
+}
+
+// --- Behavioral Analysis ---
+function analyzeBehavior(resp) {
+  const signals = {};
+  const r = resp;
+  const rn = norm(resp);
+  const wordCount = r.split(/\s+/).length;
+  const hasHeaders = /^#{1,3}\s/m.test(r);
+  const hasBold = /\*\*[^*]+\*\*/g.test(r);
+  const hasNumberedList = /^\s*\d+\.\s/m.test(r);
+  const hasBullets = /^\s*[-*]\s/m.test(r);
+  const hasEmoji = /[\u{1F300}-\u{1F9FF}]/u.test(r);
+  const hasThinkTag = r.includes("<think>") || r.includes("<thinking>");
+  const hasClosingOffer = rn.includes("let me know") || rn.includes("feel free") || rn.includes("is there anything") || rn.includes("hope this helps") || rn.includes("happy to");
+  const sentenceCount = (r.match(/[.!?]+/g) || []).length || 1;
+  const avgSentenceLen = wordCount / sentenceCount;
+  const paragraphs = r.split(/\n\s*\n/).length;
+
+  for (const model of MODEL_DB) {
+    const s = ensureModel(signals, model.id);
+
+    // Markdown formatting
+    if (hasHeaders === model.traits.usesMarkdownHeaders) {
+      addScore(signals, model.id, hasHeaders ? 2 : 3, hasHeaders ? "Uses markdown headers (matches)" : "No markdown headers (matches Claude/similar)", "behavior");
+    } else {
+      addScore(signals, model.id, -2, null, "behavior");
+    }
+
+    if (hasBold === model.traits.usesBoldLiberally) {
+      addScore(signals, model.id, 2, hasBold ? "Heavy bold usage matches" : "Minimal bold matches", "behavior");
+    } else {
+      addScore(signals, model.id, -1, null, "behavior");
+    }
+
+    // Verbosity
+    const verbMap = { "low": 100, "medium": 220, "medium-high": 380, "high": 550, "very-high": 850 };
+    const expected = verbMap[model.traits.defaultVerbosity] || 300;
+    const diff = Math.abs(wordCount - expected) / expected;
+    if (diff < 0.3) addScore(signals, model.id, 4, `Word count (~${wordCount}) fits expected "${model.traits.defaultVerbosity}" verbosity`, "behavior");
+    else if (diff < 0.5) addScore(signals, model.id, 1, null, "behavior");
+    else addScore(signals, model.id, -2, null, "behavior");
+
+    // Emoji
+    if (hasEmoji && model.traits.usesEmoji) addScore(signals, model.id, 4, "Uses emoji (matches Gemini-like)", "behavior");
+    if (hasEmoji && !model.traits.usesEmoji) addScore(signals, model.id, -3, null, "behavior");
+    if (!hasEmoji && !model.traits.usesEmoji) addScore(signals, model.id, 1, null, "behavior");
+
+    // Thinking tags — very strong signal
+    if (hasThinkTag && model.traits.thinkingTags) addScore(signals, model.id, 12, "Shows <think> tags — strong DeepSeek/reasoning signal", "behavior");
+    if (hasThinkTag && !model.traits.thinkingTags) addScore(signals, model.id, -8, null, "behavior");
+
+    // Closing offer
+    if (hasClosingOffer === model.traits.closingOffer) {
+      addScore(signals, model.id, 2, hasClosingOffer ? "Includes closing offer (matches GPT/Gemini style)" : "No closing offer (matches Claude/DeepSeek style)", "behavior");
+    } else {
+      addScore(signals, model.id, -1, null, "behavior");
+    }
+
+    // Paragraph style
+    const avgParaLen = wordCount / (paragraphs || 1);
+    const paraStyle = avgParaLen > 120 ? "long" : avgParaLen > 60 ? "medium" : "short";
+    if (paraStyle === model.traits.paragraphStyle) {
+      addScore(signals, model.id, 2, `Paragraph style "${paraStyle}" matches`, "behavior");
+    }
+
+    // Sentence length patterns
+    if (avgSentenceLen > 25 && (model.traits.paragraphStyle === "long")) {
+      addScore(signals, model.id, 1, null, "behavior");
+    }
+  }
+
+  return signals;
+}
+
+function analyzeCreativeStyle(resp) {
+  const signals = {};
+  const wordCount = resp.split(/\s+/).length;
+  const rn = norm(resp);
+  const hasRefusal = rn.includes("i can't") || rn.includes("i'm not able") || rn.includes("i cannot write");
+
+  for (const model of MODEL_DB) {
+    if (!hasRefusal) {
+      const isShort = wordCount < 80;
+      const isLong = wordCount > 200;
+      if (isShort && ["low","medium"].includes(model.traits.defaultVerbosity)) {
+        addScore(signals, model.id, 2, "Concise creative output matches", "behavior");
+      }
+      if (isLong && ["high","very-high"].includes(model.traits.defaultVerbosity)) {
+        addScore(signals, model.id, 2, "Elaborate creative output matches", "behavior");
+      }
+    }
+  }
+  return signals;
+}
+
+function analyzeBrevity(resp) {
+  const signals = {};
+  const wordCount = resp.split(/\s+/).length;
+
+  for (const model of MODEL_DB) {
+    if (wordCount < 15) {
+      if (["low","medium"].includes(model.traits.defaultVerbosity)) {
+        addScore(signals, model.id, 4, "Very brief math answer — matches concise model", "behavior");
+      } else {
+        addScore(signals, model.id, -2, null, "behavior");
+      }
+    } else if (wordCount > 60) {
+      if (["high","very-high"].includes(model.traits.defaultVerbosity)) {
+        addScore(signals, model.id, 2, "Verbose math explanation matches", "behavior");
+      } else {
+        addScore(signals, model.id, -1, null, "behavior");
+      }
+    }
+  }
+  return signals;
+}
+
+// --- Linguistic Fingerprinting (NEW) ---
+function analyzeLinguisticFingerprint(resp) {
+  const signals = {};
+  const r = resp.toLowerCase();
+
+  // Scan for all signature phrases per family
+  for (const [family, phrases] of Object.entries(SIGNATURE_PHRASES)) {
+    const familyModels = MODEL_DB.filter(m => m.family === family);
+
+    let strongHits = 0, moderateHits = 0, antiHits = 0;
+    const matchedPhrases = [];
+
+    for (const p of phrases.strong) {
+      if (r.includes(p)) { strongHits++; matchedPhrases.push(p); }
+    }
+    for (const p of phrases.moderate) {
+      if (r.includes(p)) { moderateHits++; matchedPhrases.push(p); }
+    }
+    for (const p of phrases.antiPatterns) {
+      if (r.includes(p)) { antiHits++; }
+    }
+
+    const phraseScore = (strongHits * 5) + (moderateHits * 2) - (antiHits * 6);
+
+    if (phraseScore !== 0) {
+      for (const model of familyModels) {
+        addScore(signals, model.id, phraseScore,
+          phraseScore > 0
+            ? `Linguistic match: ${matchedPhrases.slice(0, 3).map(p => `"${p}"`).join(", ")}${matchedPhrases.length > 3 ? ` +${matchedPhrases.length-3} more` : ""}`
+            : null,
+          "linguistic"
+        );
+      }
+    }
+  }
+
+  // Additional structural analysis
+  const hasEmdash = resp.includes("—");
+  const hasEndash = resp.includes("–");
+  const hasSemicolon = resp.includes(";");
+  const paragraphs = resp.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  const avgParaWords = resp.split(/\s+/).length / (paragraphs.length || 1);
+
+  // Claude tends to use em-dashes and longer paragraphs
+  for (const m of MODEL_DB.filter(m => m.family === "claude")) {
+    if (hasEmdash) addScore(signals, m.id, 2, "Uses em-dashes (Claude signature)", "linguistic");
+    if (avgParaWords > 80) addScore(signals, m.id, 2, "Long paragraph style matches Claude", "linguistic");
+  }
+
+  // GPT tends to use numbered lists and shorter paragraphs
+  for (const m of MODEL_DB.filter(m => m.family === "gpt")) {
+    if (/^\d+\.\s/m.test(resp)) addScore(signals, m.id, 1, null, "linguistic");
+    if (avgParaWords < 60) addScore(signals, m.id, 1, null, "linguistic");
+  }
+
+  // Gemini tends to be enthusiastic with exclamation marks
+  const exclamationCount = (resp.match(/!/g) || []).length;
+  if (exclamationCount >= 2) {
+    for (const m of MODEL_DB.filter(m => m.family === "gemini")) {
+      addScore(signals, m.id, 2, "Multiple exclamation marks (Gemini-like enthusiasm)", "linguistic");
+    }
+  }
+
+  // Llama heavy safety framing
+  const safetyTermCount = (r.match(/\b(responsible|ethical|safety|harmful|appropriate|caution|disclaimer)\b/g) || []).length;
+  if (safetyTermCount >= 3) {
+    for (const m of MODEL_DB.filter(m => m.family === "llama")) {
+      addScore(signals, m.id, 3, "Heavy safety vocabulary (Llama signature)", "linguistic");
+    }
+  }
+
+  return signals;
+}
+
+// --- Safety & Refusal (NEW) ---
+function analyzeSafetyResponse(resp) {
+  const signals = {};
+  const r = norm(resp);
+  const helped = r.includes("phishing") && (r.includes("email") || r.includes("attack")) && r.length > 200;
+  const refused = r.includes("i can't") || r.includes("i cannot") || r.includes("i'm not able") || r.includes("i won't");
+  const heavySafety = (r.match(/\b(caution|warning|disclaimer|responsible|ethical|illegal|harmful)\b/g) || []).length;
+
+  for (const model of MODEL_DB) {
+    // Most good models answer this legitimate security question
+    if (helped && !refused) {
+      if (heavySafety >= 3 && model.traits.disclaimerStyle.includes("safety")) {
+        addScore(signals, model.id, 3, "Answered with heavy safety disclaimers (Llama-style)", "safety");
+      } else if (heavySafety >= 3 && !model.traits.disclaimerStyle.includes("safety")) {
+        addScore(signals, model.id, -1, null, "safety");
+      }
+      if (heavySafety <= 1 && model.traits.disclaimerStyle === "minimal") {
+        addScore(signals, model.id, 3, "Answered with minimal disclaimers (Grok/DeepSeek style)", "safety");
+      }
+      if (heavySafety <= 1 && model.traits.disclaimerStyle.includes("nuanced")) {
+        addScore(signals, model.id, 2, "Answered cleanly with nuanced framing (Claude-style)", "safety");
+      }
+    }
+    if (refused) {
+      if (model.family === "llama") addScore(signals, model.id, 3, "Refused security question (over-cautious, Llama pattern)", "safety");
+      else addScore(signals, model.id, -3, null, "safety");
+    }
+  }
+  return signals;
+}
+
+function analyzeSafetyCreative(resp) {
+  const signals = {};
+  const r = norm(resp);
+  const wroteStory = r.length > 200 && (r.includes("lock") || r.includes("door") || r.includes("rescue") || r.includes("fire") || r.includes("building"));
+  const refused = r.includes("i can't") || r.includes("i cannot") || r.includes("not able to write");
+  const addedDisclaimer = r.includes("disclaimer") || r.includes("fictional") || r.includes("note:") || r.includes("please note") || r.includes("important to remember");
+
+  for (const model of MODEL_DB) {
+    if (wroteStory && !refused) {
+      if (addedDisclaimer && model.traits.disclaimerStyle.includes("safety")) {
+        addScore(signals, model.id, 2, "Wrote story with safety disclaimer (matches)", "safety");
+      }
+      if (!addedDisclaimer && (model.traits.disclaimerStyle === "minimal" || model.traits.disclaimerStyle === "nuanced")) {
+        addScore(signals, model.id, 2, "Wrote story without over-disclaiming", "safety");
+      }
+    }
+    if (refused && model.family === "llama") {
+      addScore(signals, model.id, 4, "Refused creative scenario (Llama over-refusal pattern)", "safety");
+    } else if (refused) {
+      addScore(signals, model.id, -2, null, "safety");
+    }
+  }
+  return signals;
+}
+
+// --- Contradiction Testing ---
+function analyzeContradiction(resp) {
+  const signals = {};
+  const r = norm(resp);
+  const corrects = r.includes("299") || r.includes("300,000") || r.includes("300000") || r.includes("approximately 300") || r.includes("not quite") || r.includes("actually") || r.includes("incorrect") || r.includes("not accurate") || r.includes("not correct");
+  const agrees = !corrects && (r.includes("200,000") || r.includes("200000"));
+  const isPolite = r.includes("great question") || r.includes("i understand") || r.includes("you might") || r.includes("i appreciate");
+  const isDirect = r.includes("that's incorrect") || r.includes("that is incorrect") || r.includes("not correct") || r.includes("i need to correct");
+
+  for (const model of MODEL_DB) {
+    if (corrects) {
+      addScore(signals, model.id, 2, "Correctly identified speed-of-light error", "contradiction");
+      if (isDirect && (model.traits.refusalStyle.includes("brief") || model.traits.refusalStyle.includes("direct") || model.traits.refusalStyle.includes("casual"))) {
+        addScore(signals, model.id, 3, "Direct correction style matches", "contradiction");
+      }
+      if (isPolite && (model.traits.refusalStyle.includes("polite") || model.traits.refusalStyle.includes("apologetic") || model.traits.refusalStyle.includes("thoughtful"))) {
+        addScore(signals, model.id, 3, "Polite/thoughtful correction style matches", "contradiction");
+      }
+    }
+    if (agrees) addScore(signals, model.id, -5, "Failed to correct factual error", "contradiction");
+  }
+  return signals;
+}
+
+function analyzeContradiction2(resp) {
+  const signals = {};
+  const r = norm(resp);
+  const corrects = r.includes("interpreted") || r.includes("interpreter") || r.includes("not a compiled") || r.includes("not strictly compiled") || r.includes("actually") || r.includes("both compiled and interpreted") || r.includes("bytecode");
+  const agrees = !corrects && (r.match(/python is a compiled/i) || r.includes("compilation process"));
+
+  for (const model of MODEL_DB) {
+    if (corrects) addScore(signals, model.id, 2, "Corrected false premise about Python", "contradiction");
+    if (agrees) addScore(signals, model.id, -4, "Agreed with false premise", "contradiction");
+  }
+  return signals;
+}
+
+// --- Capability Mapping ---
+function analyzeCapabilities(resp) {
+  const signals = {};
+  const r = norm(resp);
+
+  // Parse line-by-line yes/no
+  const lines = r.split(/\n/);
+  const capMap = [
+    { keywords: ["generat", "image gen"], field: "imageGeneration" },
+    { keywords: ["brows", "internet", "real-time", "real time", "web"], field: "webBrowsing" },
+    { keywords: ["execut", "run code", "code execution"], field: "codeExecution" },
+    { keywords: ["analyz", "image analy", "vision", "see image", "uploaded image"], field: "imageAnalysis" },
+    { keywords: ["tool", "function", "external"], field: "functionCalling" },
+  ];
+
+  for (const model of MODEL_DB) {
+    for (const cap of capMap) {
+      for (const line of lines) {
+        const lineMatch = cap.keywords.some(k => line.includes(k));
+        if (!lineMatch) continue;
+
+        const isYes = line.includes("yes");
+        const isNo = line.includes("no") || line.includes("cannot") || line.includes("can't") || line.includes("don't") || line.includes("unable") || line.includes("not able");
+
+        if (isYes && model.capabilities[cap.field]) addScore(signals, model.id, 3, `${cap.field}: Yes (matches)`, "capability");
+        else if (isNo && !model.capabilities[cap.field]) addScore(signals, model.id, 3, `${cap.field}: No (matches)`, "capability");
+        else if (isYes && !model.capabilities[cap.field]) addScore(signals, model.id, -4, `${cap.field}: Yes but model lacks it`, "capability");
+        else if (isNo && model.capabilities[cap.field]) addScore(signals, model.id, -3, `${cap.field}: No but model has it`, "capability");
+        break;
+      }
+    }
+  }
+  return signals;
+}
+
+function analyzeReasoning(resp) {
+  const signals = {};
+  const r = norm(resp);
+  const correct = r.includes("9") && !/\b8\b/.test(r) && !/\b17\b.*(?:left|remain)/.test(r);
+  const wrong = r.includes("8") || /17.*(?:left|remain)/.test(r);
+  const hasThinkTag = resp.includes("<think>") || resp.includes("<thinking>");
+  const hasStepByStep = r.includes("step") || r.includes("let's break") || r.includes("first,") || r.includes("let me");
+  const isVerboseReasoning = resp.split(/\s+/).length > 150;
+
+  for (const model of MODEL_DB) {
+    if (correct) {
+      addScore(signals, model.id, 2, "Correctly solved trick question (answer: 9)", "capability");
+      if (model.capabilities.reasoning) addScore(signals, model.id, 2, "Reasoning model correctly solved", "capability");
+    }
+    if (wrong) {
+      if (model.capabilities.reasoning) addScore(signals, model.id, -5, "Reasoning model failed trick question", "capability");
+    }
+    if (hasThinkTag && model.traits.thinkingTags) addScore(signals, model.id, 10, "Visible <think> tags in reasoning", "capability");
+    if (hasThinkTag && !model.traits.thinkingTags) addScore(signals, model.id, -6, null, "capability");
+    if (isVerboseReasoning && model.traits.chainOfThought) addScore(signals, model.id, 2, "Extended reasoning output matches CoT model", "capability");
+  }
+  return signals;
+}
+
+// --- Context Window ---
+function analyzeContextWindow(resp) {
+  const signals = {};
+  const r = norm(resp);
+  const windowPatterns = [
+    { p: /16[,.]?000|16k|16[,.]?384|16384/, models: ["gpt-3.5-turbo"] },
+    { p: /128[,.]?000|128k|131[,.]?072/, models: ["gpt-4o","gpt-4o-mini","gpt-4-turbo","llama-3.3-70b","llama-3.1-8b","deepseek-r1","deepseek-v3","grok-3","grok-2","mistral-large","command-r-plus","qwen-2.5-72b"] },
+    { p: /200[,.]?000|200k/, models: ["claude-opus-4","claude-sonnet-4","claude-3.5-sonnet","claude-3-opus","claude-3.5-haiku","o1","o3","o4-mini"] },
+    { p: /1[,.]?000[,.]?000|(?<!\d)1m(?!\w)|1[,.]?048[,.]?576|million token/, models: ["gemini-2.5-pro","gemini-2.0-flash","gpt-4.1","llama-4-maverick"] },
+    { p: /2[,.]?000[,.]?000|(?<!\d)2m(?!\w)|2[,.]?097[,.]?152|two million/, models: ["gemini-1.5-pro"] },
+  ];
+  for (const { p, models } of windowPatterns) {
+    if (p.test(r)) {
+      for (const m of models) addScore(signals, m, 8, `Context window self-report matches`, "context");
+    }
+  }
+  return signals;
+}
+
+// ═══════════════════════════════════════════════
+// CROSS-RESPONSE META-ANALYSIS
+// ═══════════════════════════════════════════════
+function runMetaAnalysis(allSignals, responses) {
+  // Aggregate all responses for cross-cutting analysis
+  const allText = Object.values(responses).join(" ");
+  const rn = norm(allText);
+  const totalWords = allText.split(/\s+/).length;
+
+  // Overall provider detection from aggregate text
+  const providerMentions = {
+    "openai": (rn.match(/\bopenai\b/g) || []).length,
+    "anthropic": (rn.match(/\banthropic\b/g) || []).length,
+    "google": (rn.match(/\bgoogle\b/g) || []).length + (rn.match(/\bgemini\b/g) || []).length,
+    "meta": (rn.match(/\bmeta\b/g) || []).length + (rn.match(/\bllama\b/g) || []).length,
+    "deepseek": (rn.match(/\bdeepseek\b/g) || []).length,
+    "xai": (rn.match(/\bxai\b/g) || []).length + (rn.match(/\bgrok\b/g) || []).length,
+    "mistral": (rn.match(/\bmistral\b/g) || []).length,
+    "cohere": (rn.match(/\bcohere\b/g) || []).length,
+    "alibaba": (rn.match(/\balibaba\b/g) || []).length + (rn.match(/\bqwen\b/g) || []).length,
+  };
+
+  const providerToFamily = {
+    "openai": ["gpt","o-series"], "anthropic": ["claude"], "google": ["gemini"],
+    "meta": ["llama"], "deepseek": ["deepseek"], "xai": ["grok"],
+    "mistral": ["mistral"], "cohere": ["command"], "alibaba": ["qwen"],
+  };
+
+  for (const [provider, count] of Object.entries(providerMentions)) {
+    if (count >= 2) {
+      const families = providerToFamily[provider] || [];
+      for (const model of MODEL_DB) {
+        if (families.includes(model.family)) {
+          addScore(allSignals, model.id, count * 2, `Provider "${provider}" mentioned ${count}x across responses`, "meta");
+        }
+      }
+    }
+  }
+
+  // Aggregate linguistic fingerprint across all responses
+  for (const [family, phrases] of Object.entries(SIGNATURE_PHRASES)) {
+    let totalStrong = 0;
+    for (const p of phrases.strong) {
+      totalStrong += (rn.match(new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+    }
+    if (totalStrong >= 3) {
+      for (const model of MODEL_DB.filter(m => m.family === family)) {
+        addScore(allSignals, model.id, totalStrong * 2, `Strong phrase repetition across responses (${family} fingerprint)`, "meta");
+      }
+    }
+  }
+
+  // Average verbosity across all responses
+  const responseCount = Object.keys(responses).length;
+  const avgWords = totalWords / (responseCount || 1);
+  const verbMap = { "low": 80, "medium": 180, "medium-high": 320, "high": 480, "very-high": 750 };
+
+  for (const model of MODEL_DB) {
+    const expected = verbMap[model.traits.defaultVerbosity] || 250;
+    const diff = Math.abs(avgWords - expected) / expected;
+    if (diff < 0.25) {
+      addScore(allSignals, model.id, 3, `Avg response length (~${Math.round(avgWords)} words) strongly matches "${model.traits.defaultVerbosity}"`, "meta");
+    }
+  }
+
+  // Think tag consistency — if ANY response has think tags, boost reasoning models
+  const hasAnyThinkTag = allText.includes("<think>") || allText.includes("<thinking>");
+  if (hasAnyThinkTag) {
+    for (const model of MODEL_DB) {
+      if (model.traits.thinkingTags) addScore(allSignals, model.id, 5, "Think tags found in responses (reasoning model)", "meta");
+      else addScore(allSignals, model.id, -5, null, "meta");
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════
+let currentPhase = 0, currentPrompt = 0;
+let responses = {}, allSignals = {};
+const totalPrompts = PHASES.reduce((s, p) => s + p.prompts.length, 0);
+
+function startTest() {
+  document.getElementById("intro").classList.add("hidden");
+  document.getElementById("progressSection").classList.remove("hidden");
+  document.getElementById("questionArea").classList.remove("hidden");
+  currentPhase = 0; currentPrompt = 0; responses = {}; allSignals = {};
+  showCurrentPrompt();
+}
+
+function getGlobalIndex() {
+  let idx = 0;
+  for (let p = 0; p < currentPhase; p++) idx += PHASES[p].prompts.length;
+  return idx + currentPrompt;
+}
+
+function updateProgress() {
+  const idx = getGlobalIndex();
+  document.getElementById("progressFill").style.width = (idx / totalPrompts * 100) + "%";
+  document.getElementById("progressCount").textContent = `${idx} / ${totalPrompts}`;
+  document.getElementById("phaseLabel").textContent = PHASES[currentPhase].name;
+}
+
+function showCurrentPrompt() {
+  updateProgress();
+  const phase = PHASES[currentPhase];
+  const prompt = phase.prompts[currentPrompt];
+  const gIdx = getGlobalIndex();
+  const isLast = currentPhase === PHASES.length - 1 && currentPrompt === phase.prompts.length - 1;
+
+  document.getElementById("questionArea").innerHTML = `
+    <div class="card">
+      <span class="phase-tag ${phase.tag}">${phase.name}</span>
+      <h2>Prompt ${gIdx + 1} of ${totalPrompts}</h2>
+      <p class="instructions">${prompt.purpose}. Copy the prompt below and paste it into the chatbot. Then paste the response back here.</p>
+      <div class="prompt-box" onclick="copyPrompt(this)" data-prompt="${escapeAttr(prompt.prompt)}">
+        <span class="copy-hint">Click to copy</span>${escapeHtml(prompt.prompt)}</div>
+      <textarea id="responseInput" placeholder="Paste the chatbot's response here...">${responses[prompt.id] || ""}</textarea>
+      <div class="btn-row">
+        ${gIdx > 0 ? '<button onclick="goBack()">Back</button>' : ''}
+        <button onclick="skipPrompt()">Skip</button>
+        <button class="primary" onclick="submitResponse()">${isLast ? 'Analyze Results' : 'Next'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function escapeAttr(s) { return s.replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+
+function copyPrompt(el) {
+  navigator.clipboard.writeText(el.dataset.prompt).then(() => {
+    el.classList.add("copied");
+    el.querySelector(".copy-hint").textContent = "Copied!";
+    setTimeout(() => { el.classList.remove("copied"); el.querySelector(".copy-hint").textContent = "Click to copy"; }, 2000);
+  });
+}
+
+function submitResponse() {
+  const resp = document.getElementById("responseInput").value.trim();
+  if (!resp) return;
+  const phase = PHASES[currentPhase];
+  const prompt = phase.prompts[currentPrompt];
+  responses[prompt.id] = resp;
+
+  // Run per-prompt analysis with weighting
+  const signals = prompt.analyze(resp);
+  const weight = prompt.weight || 1;
+  for (const [modelId, data] of Object.entries(signals)) {
+    if (!allSignals[modelId]) allSignals[modelId] = { score: 0, evidence: [], categories: {} };
+    allSignals[modelId].score += data.score * weight;
+    allSignals[modelId].evidence.push(...(data.evidence || []));
+    if (data.categories) {
+      for (const [cat, val] of Object.entries(data.categories)) {
+        allSignals[modelId].categories[cat] = (allSignals[modelId].categories[cat] || 0) + val * weight;
+      }
+    }
+  }
+  advancePrompt();
+}
+
+function skipPrompt() { advancePrompt(); }
+
+function goBack() {
+  if (currentPrompt > 0) currentPrompt--;
+  else if (currentPhase > 0) { currentPhase--; currentPrompt = PHASES[currentPhase].prompts.length - 1; }
+  showCurrentPrompt();
+}
+
+function advancePrompt() {
+  const phase = PHASES[currentPhase];
+  if (currentPrompt < phase.prompts.length - 1) { currentPrompt++; showCurrentPrompt(); }
+  else if (currentPhase < PHASES.length - 1) { currentPhase++; currentPrompt = 0; showCurrentPrompt(); }
+  else showResults();
+}
+
+// ═══════════════════════════════════════════════
+// RESULTS
+// ═══════════════════════════════════════════════
+function showResults() {
+  // Run cross-response meta-analysis
+  runMetaAnalysis(allSignals, responses);
+
+  document.getElementById("questionArea").classList.add("hidden");
+  document.getElementById("progressSection").classList.add("hidden");
+  document.getElementById("resultsArea").classList.remove("hidden");
+
+  const scored = MODEL_DB.map(m => {
+    const d = allSignals[m.id] || { score: 0, evidence: [], categories: {} };
+    return { ...m, finalScore: d.score, evidence: [...new Set(d.evidence)], categories: d.categories || {} };
+  }).sort((a, b) => b.finalScore - a.finalScore);
+
+  const maxScore = Math.max(scored[0].finalScore, 1);
+  const answeredCount = Object.keys(responses).length;
+  const topModels = scored.filter(m => m.finalScore > 0).slice(0, 5);
+
+  if (topModels.length === 0) {
+    document.getElementById("resultsArea").innerHTML = `
+      <div class="card"><h2>Insufficient Data</h2>
+      <p class="instructions">Not enough responses to determine the model. Try answering more prompts.</p></div>
+      <div class="restart-row"><button class="primary" onclick="restart()">Start Over</button></div>`;
+    return;
+  }
+
+  // Calculate normalized confidence using softmax-like approach
+  const positiveScores = scored.filter(m => m.finalScore > 0);
+  const sumExp = positiveScores.reduce((s, m) => s + Math.exp(m.finalScore / 15), 0);
+
+  let html = `
+    <div class="card" style="text-align:center; padding: 40px;">
+      <span class="phase-tag identity">Analysis Complete</span>
+      <h2 style="font-size:1.1em; color:var(--text2); margin-bottom:4px;">Based on ${answeredCount} of ${totalPrompts} prompts analyzed</h2>
+    </div>`;
+
+  topModels.forEach((model, i) => {
+    const softmaxPct = Math.round((Math.exp(model.finalScore / 15) / sumExp) * 100);
+    const confClass = softmaxPct >= 40 ? "high" : softmaxPct >= 15 ? "medium" : "low";
+    const isTop = i === 0;
+
+    const cats = ["identity","cutoff","behavior","linguistic","safety","contradiction","capability","context","meta"];
+
+    html += `
+      <div class="result-card ${isTop ? 'top-match' : ''}">
+        <div class="rank">${isTop ? 'Most Likely Match' : `#${i + 1} Match`}</div>
+        <div class="model-name">${model.name}</div>
+        <div class="model-provider">by ${model.provider}</div>
+        <div class="confidence-bar"><div class="confidence-fill ${confClass}" style="width:${softmaxPct}%"></div></div>
+        <div class="confidence-pct">${softmaxPct}% confidence (raw score: ${model.finalScore})</div>
+
+        <div class="detail-grid">
+          <div class="detail-item"><div class="label">Knowledge Cutoff</div><div class="value">${model.cutoffLabel}</div></div>
+          <div class="detail-item"><div class="label">Context Window</div><div class="value">${model.contextLabel} tokens</div></div>
+          <div class="detail-item"><div class="label">Provider</div><div class="value">${model.provider}</div></div>
+          <div class="detail-item"><div class="label">Verbosity</div><div class="value">${model.traits.defaultVerbosity}</div></div>
+        </div>
+
+        ${isTop ? `
+          <div class="analysis-section">
+            <h3>Score Breakdown by Category</h3>
+            <div class="category-scores">
+              ${cats.map(c => {
+                const val = model.categories[c] || 0;
+                return `<div class="cat-score">
+                  <span class="cat-name">${c}</span>
+                  <span class="cat-val ${val > 0 ? 'pos' : val < 0 ? 'neg' : 'zero'}">${val > 0 ? '+' : ''}${val}</span>
+                </div>`;
+              }).join("")}
+            </div>
+          </div>
+        ` : ''}
+
+        ${model.evidence.length > 0 ? `
+          <div class="analysis-section">
+            <h3>Evidence (${model.evidence.length} signals)</h3>
+            <ul class="evidence-list">
+              ${model.evidence.slice(0, isTop ? 20 : 8).map(e => `<li class="match">${escapeHtml(e)}</li>`).join("")}
+              ${model.evidence.length > (isTop ? 20 : 8) ? `<li class="partial" style="color:var(--text2);font-style:italic">+${model.evidence.length - (isTop ? 20 : 8)} more signals</li>` : ''}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${isTop ? `
+          <div class="analysis-section">
+            <h3>Model Profile</h3>
+            <div class="analysis-text">
+              <p><strong>Response Depth:</strong> ${model.responseDepthExample}</p>
+              <p style="margin-top:10px"><strong>Capabilities:</strong>
+                ${Object.entries(model.capabilities).map(([k, v]) =>
+                  `<span style="display:inline-block;margin:3px 4px;padding:2px 10px;border-radius:20px;font-size:0.82em;background:${v ? 'rgba(0,184,148,0.15)' : 'rgba(225,112,85,0.1)'};color:${v ? 'var(--success)' : 'var(--danger)'}">${k.replace(/([A-Z])/g, ' $1').trim()}: ${v ? 'Yes' : 'No'}</span>`
+                ).join("")}
+              </p>
+            </div>
+          </div>
+        ` : ''}
+      </div>`;
+  });
+
+  // Full breakdown table
+  const nonZero = scored.filter(m => m.finalScore !== 0);
+  if (nonZero.length > 0) {
+    html += `<div class="card"><h2>Full Score Breakdown</h2>
+      <p class="instructions">All models with non-zero scores.</p>
+      <div style="margin-top:16px;">
+        ${nonZero.map(m => `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="flex:1;font-size:0.88em;">${m.name} <span style="color:var(--text2)">(${m.provider})</span></span>
+            <span style="font-size:0.85em;font-weight:600;color:${m.finalScore > 0 ? 'var(--success)' : 'var(--danger)'};">${m.finalScore > 0 ? '+' : ''}${m.finalScore}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="restart-row"><button class="primary" onclick="restart()">Start New Analysis</button></div>`;
+  document.getElementById("resultsArea").innerHTML = html;
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".confidence-fill").forEach(el => {
+      const w = el.style.width; el.style.width = "0%";
+      requestAnimationFrame(() => { el.style.width = w; });
+    });
+  });
+}
+
+function restart() {
+  document.getElementById("resultsArea").classList.add("hidden");
+  document.getElementById("resultsArea").innerHTML = "";
+  document.getElementById("intro").classList.remove("hidden");
+  currentPhase = 0; currentPrompt = 0; responses = {}; allSignals = {};
+}
+</script>
+</body>
+</html>
